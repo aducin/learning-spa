@@ -1,0 +1,10 @@
+{
+  "name": "ng-zapp",
+  "version": "0.0.1",
+  "description": "Projekt Zapp",
+  "author": "Albert Ducin <albert.ducin@gmail.com>",
+  "dependencies": {
+    "angular": "~1.5.7",
+    "bootstrap": "~3.3.6"
+  }
+}
