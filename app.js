@@ -5,9 +5,13 @@ angular.module("ZappApp", [])
 
 .controller("ProductController", ["$scope", "$http", "apiUrl", function($scope, $http, apiUrl){
   
+	$scope.data = {
+	      singleSelect: null,
+	};
+  
 	$http.get(apiUrl + 'products?search=toczone')
 	      .then(function(response){
-		      $scope.news = response.data;
+		      $scope.nameList = response.data;
 	      })
 	
 	$http.get(apiUrl + 'categories')
@@ -21,15 +25,37 @@ angular.module("ZappApp", [])
 	      })
 	
 	$scope.CheckIdBasic = function () {
-	    $http.get(apiUrl + 'products/' + $scope.checkId + '?basic=true')
+	    if ($scope.checkId == undefined) {
+		return false;
+	    }
+	    if ($scope.data.singleSelect != null) {
+	        var currentUrl = apiUrl + 'products/' + $scope.checkId + '/' + $scope.data.singleSelect + '?basic=true';
+	    } else {
+		var currentUrl = apiUrl + 'products/' + $scope.checkId + '?basic=true';
+	    }
+	    $http.get(currentUrl)
 	    .then(function(response){
 		if(response.data.success == false) {
-		      console.log(response.data.reason);
+		      $scope.attributeSelect = response.data.dataNew;
+		      delete $scope.basicId;
 		} else {
 		      delete $scope.nameAdditionalConditions;
+		      delete $scope.attributeSelect;
+		      $scope.data.singleSelect = null;
 		      $scope.basicId = response.data;
 		}
 	    })
+	};
+	
+	$scope.CheckName = function () {
+	      if ($scope.basicName.length < 3) {
+		    return false;
+	      }
+	      $scope.basicName;
+	      $http.get(apiUrl + 'products?search=' + $scope.basicName)
+	      .then(function(response){
+		      $scope.news = response.data;
+	      })
 	};
 	
 	$scope.CheckIdBasicPriceChange = function () {
@@ -52,17 +78,7 @@ angular.module("ZappApp", [])
 	      delete $scope.basicId;
 	};
 	 
-	$scope.CheckName = function () {
-	      var name = document.getElementById("basicName").value;
-	      if (name.length < 3) {
-		    return false;
-	      }
-	      $http.get(apiUrl + 'products?search=' + name)
-	      .then(function(response){
-		      $scope.news = response.data;
-		      console.log($scope.news);
-	      })
-	};
+
 	
 	$scope.CheckNameConditions = function () {
 	      if ($scope.nameAdditionalConditions == undefined) {
