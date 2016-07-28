@@ -5,6 +5,37 @@ angular.module("ZappApp", [])
 
 .controller("ProductController", ["$scope", "$http", "apiUrl", function($scope, $http, apiUrl){
   
+	$scope.basicUpdate = [];
+	$scope.basicUpdate.message = null;
+	
+	function CheckIdBasic(repeat) {
+	      if ($scope.checkId == undefined) {
+		  return false;
+	      }
+	      if(repeat != 'true') {
+		  delete $scope.basicUpdate.message;
+		  delete $scope.basicQuantityChange;
+		  delete $scope.basicPriceChange;
+	      }
+	      if ($scope.data.singleSelect != null) {
+		  var currentUrl = apiUrl + 'products/' + $scope.checkId + '/' + $scope.data.singleSelect + '?basic=true';
+	      } else {
+		  var currentUrl = apiUrl + 'products/' + $scope.checkId + '?basic=true';
+	      }
+	      $http.get(currentUrl)
+	      .then(function(response){
+		  if(response.data.success == false) {
+			$scope.attributeSelect = response.data.dataNew;
+			delete $scope.basicId;
+		  } else {
+			delete $scope.nameAdditionalConditions;
+			delete $scope.attributeSelect;
+			$scope.data.singleSelect = null;
+			$scope.basicId = response.data;
+		  }
+	      })
+	}
+	
 	$scope.data = {
 	      singleSelect: null,
 	};
@@ -25,26 +56,7 @@ angular.module("ZappApp", [])
 	      })
 	
 	$scope.CheckIdBasic = function () {
-	    if ($scope.checkId == undefined) {
-		return false;
-	    }
-	    if ($scope.data.singleSelect != null) {
-	        var currentUrl = apiUrl + 'products/' + $scope.checkId + '/' + $scope.data.singleSelect + '?basic=true';
-	    } else {
-		var currentUrl = apiUrl + 'products/' + $scope.checkId + '?basic=true';
-	    }
-	    $http.get(currentUrl)
-	    .then(function(response){
-		if(response.data.success == false) {
-		      $scope.attributeSelect = response.data.dataNew;
-		      delete $scope.basicId;
-		} else {
-		      delete $scope.nameAdditionalConditions;
-		      delete $scope.attributeSelect;
-		      $scope.data.singleSelect = null;
-		      $scope.basicId = response.data;
-		}
-	    })
+	      CheckIdBasic();
 	};
 	
 	$scope.CheckName = function () {
@@ -124,10 +136,7 @@ angular.module("ZappApp", [])
                 $scope.basicUpdate = response.data;
 		if ($scope.basicUpdate.success == true) {	
 		      $scope.basicUpdate.message = success;
-		      //var alertMessage = setInterval(function(){ 
-			//delete $scope.basicUpdate.message;
-			//clearInterval(alertMessage);
-		      //}, 3000);
+		      CheckIdBasic('true');
 		}
             })
 	};
