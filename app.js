@@ -7,6 +7,9 @@ angular.module("ZappApp", [])
   
 	$scope.basicUpdate = [];
 	$scope.basicUpdate.message = null;
+	$scope.data = {
+	      singleSelect: null,
+	};
 	
 	function CheckIdBasic(repeat) {
 	      if ($scope.checkId == undefined) {
@@ -35,10 +38,6 @@ angular.module("ZappApp", [])
 		  }
 	      })
 	}
-	
-	$scope.data = {
-	      singleSelect: null,
-	};
   
 	$http.get(apiUrl + 'products?search=toczone')
 	      .then(function(response){
