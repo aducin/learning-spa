@@ -1,15 +1,66 @@
-angular.module("ZappApp", [])
+angular.module("ZappApp", ['ngRoute'])
 
 //.constant("apiUrl", "http://localhost:3000/")
 .constant("apiUrl", "http://modele-ad9bis.pl/cms_spa/web/app_dev.php/")
 
-.controller("ProductController", ["$scope", "$http", "apiUrl", function($scope, $http, apiUrl){
+.config(['$routeProvider', function($routeProvider){
+                $routeProvider
+                .when('/',{
+				    templateUrl: "products.html",
+				    controller: "ProductController",
+			   })
+		.when('/orders',{
+				    templateUrl: "orders.html",
+				    controller: "OrderController",
+				    controllerAs: "order"
+				  })
+                .when('/products',{
+				    templateUrl: "products.html",
+				    controller: "ProductController",
+				  })
+                .when('/postal',{template:'This is the postal Route'})
+		.when('/products/:id',{
+		  		    templateUrl: "products.html",
+				    controller: "ProductController",
+				  })
+                .otherwise({redirectTo:'/'});
+}])
+
+.controller('OrderController', function() {
+  var self = this;
+  self.message = "Tutaj będzie panel obsługi zamówień!";
+})
+
+.controller('ProductControllerEdition', ['$scope', '$routeParams',
+   function ($scope, $routeParams) {
+      //Get ID out of current URL
+      var currentId = $routeParams.id;
+      alert('Tutaj będzie pełna edycja produktu nr: ' + currentId);
+}])
+
+.controller("ProductController", ["$scope", "$http", "apiUrl", '$routeParams', function($scope, $http, apiUrl, $routeParams){
+  
+	function idCheck($scope, $routeParams) {
+	      var currentId = $routeParams.id;
+	      if ($routeParams.id != undefined) {
+		    $scope.productDetail = true;
+		    $scope.productId = $routeParams.id;
+		    alert($routeParams.id);
+	      }
+	}
+	
+	idCheck($scope, $routeParams);
   
 	$scope.basicUpdate = [];
 	$scope.basicUpdate.message = null;
 	$scope.data = {
+	      categorySelect: null,
+	      manufacturerSelect: null,
 	      singleSelect: null,
+	      searchResult: null,
+	      searchResultLength: null,
 	};
+	$scope.names = null;
 	
 	function CheckIdBasic(repeat) {
 	      if ($scope.checkId == undefined) {
@@ -60,12 +111,37 @@ angular.module("ZappApp", [])
 	
 	$scope.CheckName = function () {
 	      if ($scope.basicName.length < 3) {
+		    $scope.data.searchResult = null;
+		    $scope.data.searchResultLength = null;
+	            $scope.names = null;
 		    return false;
 	      }
+	      if ($scope.data.manufacturerSelect == null) {
+		  $scope.data.manufacturerSelect = 0;
+	      }
+	      if ($scope.data.categorySelect == null) {
+		  $scope.data.categorySelect = 0;
+	      }
+	      delete $scope.basicId;
 	      $scope.basicName;
-	      $http.get(apiUrl + 'products?search=' + $scope.basicName)
+	      $http.get(apiUrl + 'products?search=' + $scope.basicName + '&manufacturer=' + $scope.data.manufacturerSelect + '&category=' + $scope.data.categorySelect)
 	      .then(function(response){
-		      $scope.news = response.data;
+		      if(response.data.success == false) {
+			  $scope.names = null;
+			  $scope.data.searchResult = response.data.reason;
+			  $scope.data.searchResultLength = null;
+		      } else {
+			  $scope.data.searchResult = 'Wyniki wyszukiwania dla frazy: "' + $scope.basicName + '". ';
+			  if (response.data.length == 1) {
+				var lengthFinish = ' produkt.';
+			  } else if (response.data.length == 2 || response.data.length == 3 || response.data.length == 4) {
+				var lengthFinish = ' produkty.';
+			  } else {
+				var lengthFinish = ' produktów.';
+			  }
+			  $scope.data.searchResultLength = 'Znaleziono ' + response.data.length + lengthFinish;
+			  $scope.names = response.data;
+		      }
 	      })
 	};
 	
