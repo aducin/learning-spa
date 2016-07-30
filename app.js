@@ -1,4 +1,4 @@
-angular.module("ZappApp", ['ngRoute'])
+angular.module("ZappApp", ['ngRoute', 'ngSanitize'])
 
 //.constant("apiUrl", "http://localhost:3000/")
 .constant("apiUrl", "http://modele-ad9bis.pl/cms_spa/web/app_dev.php/")
@@ -38,20 +38,9 @@ angular.module("ZappApp", ['ngRoute'])
       alert('Tutaj będzie pełna edycja produktu nr: ' + currentId);
 }])
 
-.controller("ProductController", ["$scope", "$http", "apiUrl", '$routeParams', function($scope, $http, apiUrl, $routeParams){
+.controller("ProductController", ["$scope", "$http", "apiUrl", '$routeParams', '$filter', function($scope, $http, apiUrl, $routeParams, $filter){
   
-	function idCheck($scope, $routeParams) {
-	      var currentId = $routeParams.id;
-	      if ($routeParams.id != undefined) {
-		    $scope.productDetail = true;
-		    $scope.productId = $routeParams.id;
-		    alert($routeParams.id);
-	      }
-	}
-	
-	idCheck($scope, $routeParams);
-  
-	$scope.basicUpdate = [];
+        $scope.basicUpdate = [];
 	$scope.basicUpdate.message = null;
 	$scope.data = {
 	      categorySelect: null,
@@ -60,7 +49,73 @@ angular.module("ZappApp", ['ngRoute'])
 	      searchResult: null,
 	      searchResultLength: null,
 	};
+	$scope.fullEdition = [];
+	$scope.fullEdition.active = undefined;
+	$scope.fullEdition.condition = undefined;
+	$scope.fullEdition.discount = [];
+	$scope.fullEdition.discount.new = [];
+	$scope.fullEdition.discount.new.reductionType = undefined;
+	$scope.fullEdition.discount.old = [];
+	$scope.fullEdition.discount.old.reductionType = undefined;
 	$scope.names = null;
+  
+	function idCheck($scope, $routeParams) {
+	      var currentId = $routeParams.id;
+	      if ($routeParams.id != undefined) {
+		    $scope.productId = $routeParams.id;
+		    var currentUrl = apiUrl + 'products/' + $scope.productId;
+		    $http.get(currentUrl)
+		    .then(function(response){
+			  $scope.fullEdition = response.data;
+			  $scope.fullEdition.descriptionOriginal = $scope.fullEdition.description;
+			  var currentTag = '';
+			  for (var i = 0; i < $scope.fullEdition.productTags.length; i++) {
+			    currentTag = currentTag + $scope.fullEdition.productTags[i].name + ', ';
+			  }
+			  currentTag = currentTag.replace(/,\s*$/, "");
+			  $scope.fullEdition.currentTag = currentTag;
+			  for (var i = 0; i < $scope.manufactorers.length; i++) {
+			      if ($scope.fullEdition.manufacturer == $scope.manufactorers[i].id) {
+				  $scope.fullEdition.manufactorerName = $scope.manufactorers[i].name;
+			      }
+			  }
+			  var conditionArray = [];
+			  if ($scope.fullEdition.condition == 'new') {
+				conditionArray.push({value: 'new', name: 'Nowy'});
+				conditionArray.push({value: 'used', name: 'Używany'});
+				conditionArray.push({value: 'renewed', name: 'Odnowiony'});
+			  } else if ($scope.fullEdition.condition == 'used') {
+			        conditionArray.push({value: 'used', name: 'Używany'});
+				conditionArray.push({value: 'new', name: 'Nowy'});
+				conditionArray.push({value: 'renewed', name: 'Odnowiony'});
+			  } else if ($scope.fullEdition.condition == 'renewed') {
+				conditionArray.push({value: 'renewed', name: 'Odnowiony'});
+			        conditionArray.push({value: 'used', name: 'Używany'});
+				conditionArray.push({value: 'new', name: 'Nowy'});
+			  }
+			  $scope.fullEdition.conditionArray = conditionArray;
+			  var activityArray = [];
+			  if ($scope.fullEdition.active == 0) {
+				activityArray.push({value: 0, name: 'Nieaktywny'});
+				activityArray.push({value: 1, name: 'Aktywny'});
+			  } else if ($scope.fullEdition.active == 1) {
+				activityArray.push({value: 1, name: 'Aktywny'});
+				activityArray.push({value: 0, name: 'Nieaktywny'});
+			  }
+			  $scope.fullEdition.activityArray = activityArray;
+			  if ($scope.fullEdition.discount.new.reductionType == 'percentage') {
+				var discount = $scope.fullEdition.price.new * $scope.fullEdition.discount.new.reduction;
+				$scope.fullEdition.discount.new.realPrice = $scope.fullEdition.price.new - discount;
+			  }
+			  if ($scope.fullEdition.discount.old.reductionType == 'amount') {
+				$scope.fullEdition.discount.old.realPrice = $scope.fullEdition.price.old - $scope.fullEdition.discount.old.reduction;
+			  }
+		    })
+		    $scope.productDetail = 'Pełna edycja produktu nr: ' + $scope.productId;
+	      }
+	}
+	
+	idCheck($scope, $routeParams);
 	
 	function CheckIdBasic(repeat) {
 	      if ($scope.checkId == undefined) {
@@ -175,6 +230,15 @@ angular.module("ZappApp", ['ngRoute'])
 		    delete $scope.nameAdditionalConditions;
 	      }
 	};
+	
+        $scope.multiplyDesc = function () {
+	      var desc = $scope.fullEdition.descriptionOriginal;
+	      $scope.fullEdition.description = $scope.fullEdition.descriptionShort + desc;
+	}
+	
+	$scope.multiplyText = function () {
+	      $scope.fullEdition.metaTitle = $scope.fullEdition.name;
+	}
 	
 	$scope.UpdatePrice = function () {
 	    var db = document.getElementById("basicPriceDb").value;
