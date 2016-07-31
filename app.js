@@ -219,8 +219,6 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	      delete $scope.basicId;
 	};
 	 
-
-	
 	$scope.CheckNameConditions = function () {
 	      if ($scope.nameAdditionalConditions == undefined) {
 		    delete $scope.basicId;
@@ -246,9 +244,20 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	      }
 	}
 	
+	$scope.fullUpdate = function () {
+	      var categories = $scope.fullEdition.categories;
+	      var data = $.param({
+		scope: 'full',
+		id: $scope.fullEdition.id,
+		name: $scope.fullEdition.name,
+                descriptionShort: $scope.fullEdition.descriptionShort,
+		description: $scope.fullEdition.description
+              });
+	      console.log(data);
+	}
+	
         $scope.multiplyDesc = function () {
-	      var desc = $scope.fullEdition.descriptionOriginal;
-	      $scope.fullEdition.description = $scope.fullEdition.descriptionShort + desc;
+	      $scope.fullEdition.description = $scope.fullEdition.descriptionShort + $scope.fullEdition.descriptionOriginal;
 	}
 	
 	$scope.multiplyText = function () {
@@ -284,7 +293,9 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	function UpdateData(db, data, success) {
 	    if (db == 'both') {
 		  var url = apiUrl + 'products/' + $scope.basicId.id + '/' + $scope.basicId.attribute.new + '/' + $scope.basicId.attribute.old;
-	    } else {
+	    } else if (db == 'linuxPl') {
+		  var url = apiUrl + 'products/' + $scope.basicId.id + '/' + $scope.basicId.attribute.new;
+	    } else if (db == 'ogicom') {
 		  var url = apiUrl + 'products/' + $scope.basicId.id + '/' + $scope.basicId.attribute.old;
 	    }
 	    var config = 'contenttype';
