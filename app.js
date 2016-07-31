@@ -1,4 +1,4 @@
-angular.module("ZappApp", ['ngRoute', 'ngSanitize'])
+angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 
 //.constant("apiUrl", "http://localhost:3000/")
 .constant("apiUrl", "http://modele-ad9bis.pl/cms_spa/web/app_dev.php/")
@@ -38,7 +38,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize'])
       alert('Tutaj będzie pełna edycja produktu nr: ' + currentId);
 }])
 
-.controller("ProductController", ["$scope", "$http", "apiUrl", '$routeParams', '$filter', function($scope, $http, apiUrl, $routeParams, $filter){
+.controller("ProductController", ["$scope", "$http", "apiUrl", '$routeParams', '$filter', '$window', function($scope, $http, apiUrl, $routeParams, $filter, $window){
   
         $scope.basicUpdate = [];
 	$scope.basicUpdate.message = null;
@@ -121,6 +121,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize'])
 	      if ($scope.checkId == undefined) {
 		  return false;
 	      }
+	      delete $scope.productDetail;
 	      if(repeat != 'true') {
 		  delete $scope.basicUpdate.message;
 		  delete $scope.basicQuantityChange;
@@ -141,14 +142,12 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize'])
 			delete $scope.attributeSelect;
 			$scope.data.singleSelect = null;
 			$scope.basicId = response.data;
+			$scope.basicId.imageUrl =
+			'http://modele-ad9bis.pl/img/p/' + $scope.basicId.id + '-' + $scope.basicId.image + '-thickbox.jpg';
+			$scope.basicId.imageUrlMain = 'http://modele-ad9bis.pl/img/p/' + $scope.basicId.id + '-' + $scope.basicId.image + '.jpg';
 		  }
 	      })
 	}
-  
-	$http.get(apiUrl + 'products?search=toczone')
-	      .then(function(response){
-		      $scope.nameList = response.data;
-	      })
 	
 	$http.get(apiUrl + 'categories')
 	      .then(function(response){
@@ -231,6 +230,22 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize'])
 	      }
 	};
 	
+	$scope.displayCategories = function () {
+	      if ($scope.displayCategory == undefined) {
+		    $scope.displayCategory = true;
+	      } else {
+		    delete $scope.displayCategory;
+	      }
+	}
+
+	$scope.displayPhotos = function () {
+	      if ($scope.displayPhoto == undefined) {
+		    $scope.displayPhoto = true;
+	      } else {
+		    delete $scope.displayPhoto;
+	      }
+	}
+	
         $scope.multiplyDesc = function () {
 	      var desc = $scope.fullEdition.descriptionOriginal;
 	      $scope.fullEdition.description = $scope.fullEdition.descriptionShort + desc;
@@ -238,6 +253,10 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize'])
 	
 	$scope.multiplyText = function () {
 	      $scope.fullEdition.metaTitle = $scope.fullEdition.name;
+	}
+	
+	$scope.openInNewWindow = function(){
+	      $window.open($scope.basicId.imageUrlMain);
 	}
 	
 	$scope.UpdatePrice = function () {
@@ -279,26 +298,5 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize'])
 		}
             })
 	};
-	/*
-	$scope.UpdateData = function () {
-	    if ($scope.productDb == 'both') {
-		  var url = apiUrl + 'products/' + $scope.productId + '/' + $scope.productAttribute + '/' + $scope.productAttribute;
-	    } else {
-		  var url = apiUrl + 'products/' + $scope.productId + '/' + $scope.productAttribute;
-	    }
-	    //var url = apiUrl + 'products/' + $scope.productId + '/' + $scope.productAttribute;
-	    var config = 'contenttype';
-            var data = $.param({
-		db: $scope.productDb,
-                quantity: $scope.productQuantity
-            });
-
-            $http.put(url, data, config)
-            .then(function (data, status, headers) {
-                $scope.ServerResponse = data.data;
-		console.log($scope.ServerResponse);
-            })
-        };
-	*/
 
 }]);
