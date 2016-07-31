@@ -11,7 +11,7 @@
 	</div>
 	<div class="container">
 		<div id="navbar" class="navbar-collapse collapse">
-			<form ng-submit="CheckIdBasic()" class="navbar-form navbar-right">
+			<form ng-submit="checkIdBasic()" class="navbar-form navbar-right">
 				<div class="form-group">
 				    <input type="text" placeholder="Podaj ID" class="form-control" ng-model="checkId">
 				</div>
@@ -25,12 +25,12 @@
 			</form>
 			<form class="navbar-form navbar-right">
 			      <div class="form-group">
-				  <input ng-keyup="CheckName()" type="text" placeholder="Podaj nazwę" class="form-control" ng-model="basicName">
+				  <input ng-keyup="checkName()" type="text" placeholder="Podaj nazwę" class="form-control" ng-model="basicName">
 			      </div>
 			      <div class="form-group">
-				  <button ng-click="CheckNameConditions()" class="btn btn-warning">Dodatkowe kryteria</button>
+				  <button ng-click="checkNameConditions()" class="btn btn-warning">Dodatkowe kryteria</button>
 			      </div>
-			      <button ng-click="CheckName()" class="btn btn-success">Wyszukaj</button>
+			      <button ng-click="checkName()" class="btn btn-success">Wyszukaj</button>
 			</form>
 		</div>
 		<div ng-if="basicId" class="col-xs-12">
@@ -48,7 +48,7 @@
 			    <p>Ilość - stary sklep: {{basicId.quantity.old}}</p>
 			    <div class="col-xs-12" style="margin-bottom: 10px;">
 				  <div class="col-xs-2">
-					<button ng-click="CheckIdBasicQuantityChange()" class="btn btn-info marginLeft">Zmień ilość</button>
+					<button ng-click="checkIdBasicQuantityChange()" class="btn btn-info marginLeft">Zmień ilość</button>
 				  </div>
 				  <div ng-if="basicQuantityChange" class="col-xs-3">
 					 <input type="text" placeholder="Podaj nową ilość" class="form-control" id="basicQuantityInput" />
@@ -61,7 +61,7 @@
 					</select>
 				  </div>
 				  <div ng-if="basicQuantityChange" class="col-xs-2">
-					<button ng-click="UpdateQuantity()" class="btn btn-primary">Zapisz ilość</button>
+					<button ng-click="updateQuantity()" class="btn btn-primary">Zapisz ilość</button>
 				  </div>
 			    </div>
 			    <p>Cena - nowy sklep: {{basicId.price.new}} zł 
@@ -73,7 +73,7 @@
 		    
 			    <div class="col-xs-12">
 				    <div class="col-xs-2">
-					  <button ng-click="CheckIdBasicPriceChange()" class="btn btn-info marginLeft">Zmień cenę</button>
+					  <button ng-click="checkIdBasicPriceChange()" class="btn btn-info marginLeft">Zmień cenę</button>
 				    </div>
 				    <div ng-if="basicPriceChange" class="col-xs-3">
 					    <input type="text" placeholder="Podaj nową cenę" class="form-control" id="basicPriceInput" />
@@ -86,7 +86,7 @@
 					    </select>
 				    </div>
 				    <div ng-if="basicPriceChange" class="col-xs-2">
-					    <button ng-click="UpdatePrice()" class="btn btn-primary">Zapisz cenę</button>
+					    <button ng-click="updatePrice()" class="btn btn-primary">Zapisz cenę</button>
 				    </div>
 			    </div>
 			    <div ng-if="basicUpdate.message" class="col-xs-12">
@@ -99,7 +99,7 @@
 				    <div class="col-xs-2">
 					<p><a class="btn btn-primary marginLeft" href="#/products/{{basicId.id}}" role="button">Pełna edycja &raquo;</a></p>
 				    </div>
-				    <button ng-click="CheckIdBasicRemove()" class="btn btn-danger">Usuń wyniki</button>
+				    <button ng-click="checkIdBasicRemove()" class="btn btn-danger">Usuń wyniki</button>
 			    </div>
 		    </div>
 		</div>
@@ -189,46 +189,18 @@
 			  </div>
 			  <label class="col-xs-2 marginTop">Producent</label>
 			  <div class="col-xs-3">
-			      <select ng-model="data.manufacturerSelect" ng-init="data.manufacturerSelect=fullEdition.manufacturer" class="form-control borderSolid">
-				    <option value="{{fullEdition.manufacturer}}">{{fullEdition.manufactorerName}}</option>
-				    <option ng-repeat="item in manufactorers" ng-if="item.id!=fullEdition.manufacturer" value="{{item.id}}">{{item.name}}</option>
-			      </select>
+			      <select ng-model="fullEdition.manufactorerSingle" ng-options="single.name for single in fullEdition.manufactorers" class="form-control borderSolid"></select>
 			  </div>
 		  </div>
 		  <div class="col-xs-12 marginBottom">
 		      <label class="col-xs-2 marginTop">Stan produktu</label>
-		      <div class="col-xs-2" ng-if="fullEdition.condition == undefined">
-			  <select class="form-control borderSolid">
-			  </select>
-		      </div>
-		      <div class="col-xs-2" ng-if="fullEdition.condition == 'new'">
-			  <select ng-model="fullEdition.condition" ng-init="fullEdition.condition='new'" class="form-control borderSolid">
-				<option ng-repeat="item in fullEdition.conditionArray" value="{{item.value}}">{{item.name}}</option>
-			  </select>
-		      </div>
-		      <div class="col-xs-2" ng-if="fullEdition.condition == 'used'">
-			  <select ng-model="fullEdition.condition" ng-init="fullEdition.condition='used'" class="form-control borderSolid">
-				<option ng-repeat="item in fullEdition.conditionArray" value="{{item.value}}">{{item.name}}</option>
-			  </select>
-		      </div>
-		      <div class="col-xs-2" ng-if="fullEdition.condition == 'renewed'">
-			  <select ng-model="fullEdition.condition" ng-init="fullEdition.condition='renewed'" class="form-control borderSolid">
-				<option ng-repeat="item in fullEdition.conditionArray" value="{{item.value}}">{{item.name}}</option>
+		      <div class="col-xs-2">
+			  <select ng-model="fullEdition.condition" ng-options="single.name for single in fullEdition.productConditions" class="form-control borderSolid">
 			  </select>
 		      </div>
 		      <label class="col-xs-2 marginTop">Aktywność produktu</label>
-		      <div class="col-xs-3" ng-if="fullEdition.active == undefined">
-			  <select class="form-control borderSolid">
-			  </select>
-		      </div>
-		      <div class="col-xs-3" ng-if="fullEdition.active == 0">
-			  <select ng-model="fullEdition.active" ng-init="fullEdition.active='0'" class="form-control borderSolid">
-				<option ng-repeat="item in fullEdition.activityArray" value="{{item.value}}">{{item.name}}</option>
-			  </select>
-		      </div>
-		      <div class="col-xs-3" ng-if="fullEdition.active == 1">
-			  <select ng-model="fullEdition.active" ng-init="fullEdition.active='1'" class="form-control borderSolid">
-				<option ng-repeat="item in fullEdition.activityArray" value="{{item.value}}">{{item.name}}</option>
+		      <div class="col-xs-3" >
+			  <select ng-model="fullEdition.active" ng-options="single.name for single in fullEdition.productActivity" class="form-control borderSolid">
 			  </select>
 		      </div>
 		  </div>
@@ -260,7 +232,7 @@
 			  <button ng-if="displayCategory" ng-click="displayCategories()" class="btn btn-primary marginTop" style="margin-bottom: 8px;">Zwiń listę</button>
 			  <span ng-if="displayCategory" ng-repeat="item in fullEdition.categories">
 			      <p>
-				  <input type="checkbox" name="categories[]" value="{{item.id}}" ng-checked="item.checked"/><b> {{item.metaTitle}}</b>
+				  <input type="checkbox" name="categories[]" value="{{item.id}}" ng-model="item.checked"/><b> {{item.metaTitle}}</b>
 			      </p>
 			  </span>
 		      </div>

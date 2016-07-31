@@ -31,13 +31,6 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
   self.message = "Tutaj będzie panel obsługi zamówień!";
 })
 
-.controller('ProductControllerEdition', ['$scope', '$routeParams',
-   function ($scope, $routeParams) {
-      //Get ID out of current URL
-      var currentId = $routeParams.id;
-      alert('Tutaj będzie pełna edycja produktu nr: ' + currentId);
-}])
-
 .controller("ProductController", ["$scope", "$http", "apiUrl", '$routeParams', '$filter', '$window', function($scope, $http, apiUrl, $routeParams, $filter, $window){
   
         $scope.basicUpdate = [];
@@ -74,35 +67,21 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 			  }
 			  currentTag = currentTag.replace(/,\s*$/, "");
 			  $scope.fullEdition.currentTag = currentTag;
-			  for (var i = 0; i < $scope.manufactorers.length; i++) {
-			      if ($scope.fullEdition.manufacturer == $scope.manufactorers[i].id) {
-				  $scope.fullEdition.manufactorerName = $scope.manufactorers[i].name;
+			  for (var i = 0; i < $scope.fullEdition.manufactorers.length; i++) {
+			      if ($scope.fullEdition.manufactorer == $scope.fullEdition.manufactorers[i].id) {
+				  $scope.fullEdition.manufactorerSingle = $scope.fullEdition.manufactorers[i];
 			      }
 			  }
-			  var conditionArray = [];
-			  if ($scope.fullEdition.condition == 'new') {
-				conditionArray.push({value: 'new', name: 'Nowy'});
-				conditionArray.push({value: 'used', name: 'Używany'});
-				conditionArray.push({value: 'renewed', name: 'Odnowiony'});
-			  } else if ($scope.fullEdition.condition == 'used') {
-			        conditionArray.push({value: 'used', name: 'Używany'});
-				conditionArray.push({value: 'new', name: 'Nowy'});
-				conditionArray.push({value: 'renewed', name: 'Odnowiony'});
-			  } else if ($scope.fullEdition.condition == 'renewed') {
-				conditionArray.push({value: 'renewed', name: 'Odnowiony'});
-			        conditionArray.push({value: 'used', name: 'Używany'});
-				conditionArray.push({value: 'new', name: 'Nowy'});
+			  for (var i = 0; i < $scope.fullEdition.productConditions.length; i++) {
+				if ($scope.fullEdition.condition == $scope.fullEdition.productConditions[i].value) {
+				      $scope.fullEdition.condition = $scope.fullEdition.productConditions[i];
+				}
 			  }
-			  $scope.fullEdition.conditionArray = conditionArray;
-			  var activityArray = [];
-			  if ($scope.fullEdition.active == 0) {
-				activityArray.push({value: 0, name: 'Nieaktywny'});
-				activityArray.push({value: 1, name: 'Aktywny'});
-			  } else if ($scope.fullEdition.active == 1) {
-				activityArray.push({value: 1, name: 'Aktywny'});
-				activityArray.push({value: 0, name: 'Nieaktywny'});
+			  for (var i = 0; i < $scope.fullEdition.productActivity.length; i++) {
+				if ($scope.fullEdition.active == $scope.fullEdition.productActivity[i].value) {
+				      $scope.fullEdition.active = $scope.fullEdition.productActivity[i];
+				}
 			  }
-			  $scope.fullEdition.activityArray = activityArray;
 			  if ($scope.fullEdition.discount.new.reductionType == 'percentage') {
 				var discount = $scope.fullEdition.price.new * $scope.fullEdition.discount.new.reduction;
 				$scope.fullEdition.discount.new.realPrice = $scope.fullEdition.price.new - discount;
@@ -117,7 +96,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	
 	idCheck($scope, $routeParams);
 	
-	function CheckIdBasic(repeat) {
+	function checkIdBasic(repeat) {
 	      if ($scope.checkId == undefined) {
 		  return false;
 	      }
@@ -159,11 +138,11 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 		      $scope.manufactorers = response.data;
 	      })
 	
-	$scope.CheckIdBasic = function () {
-	      CheckIdBasic();
+	$scope.checkIdBasic = function () {
+	      checkIdBasic();
 	};
 	
-	$scope.CheckName = function () {
+	$scope.checkName = function () {
 	      if ($scope.basicName.length < 3) {
 		    $scope.data.searchResult = null;
 		    $scope.data.searchResultLength = null;
@@ -199,7 +178,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	      })
 	};
 	
-	$scope.CheckIdBasicPriceChange = function () {
+	$scope.checkIdBasicPriceChange = function () {
 	      if ($scope.basicPriceChange == undefined) {
 		    $scope.basicPriceChange = true;
 	      } else {
@@ -207,7 +186,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	      }
 	};
 	
-	$scope.CheckIdBasicQuantityChange = function () {
+	$scope.checkIdBasicQuantityChange = function () {
 	      if ($scope.basicQuantityChange == undefined) {
 		    $scope.basicQuantityChange = true;
 	      } else {
@@ -215,11 +194,11 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	      }
 	};
 	
-	$scope.CheckIdBasicRemove = function () {
+	$scope.checkIdBasicRemove = function () {
 	      delete $scope.basicId;
 	};
 	 
-	$scope.CheckNameConditions = function () {
+	$scope.checkNameConditions = function () {
 	      if ($scope.nameAdditionalConditions == undefined) {
 		    delete $scope.basicId;
 		    $scope.nameAdditionalConditions = true;
@@ -253,7 +232,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
                 descriptionShort: $scope.fullEdition.descriptionShort,
 		description: $scope.fullEdition.description
               });
-	      console.log(data);
+	      console.log(categories);
 	}
 	
         $scope.multiplyDesc = function () {
@@ -268,7 +247,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	      $window.open($scope.basicId.imageUrlMain);
 	}
 	
-	$scope.UpdatePrice = function () {
+	$scope.updatePrice = function () {
 	    var db = document.getElementById("basicPriceDb").value;
 	    var price = document.getElementById("basicPriceInput").value;
 	    var data = $.param({
@@ -276,10 +255,10 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
                 price: price
             });
 	    var success = 'Zmiana ceny zakończona pomyślnie!';
-	    UpdateData(db, data, success);
+	    updateData(db, data, success);
 	}
 	
-	$scope.UpdateQuantity = function () {
+	$scope.updateQuantity = function () {
 	    var db = document.getElementById("basicQuantityDb").value;
 	    var quantity = document.getElementById("basicQuantityInput").value;
 	    var data = $.param({
@@ -287,10 +266,10 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
                 quantity: quantity
             });
 	    var success = 'Zmiana ilości zakończona pomyślnie!';
-	    UpdateData(db, data, success);
+	    updateData(db, data, success);
         };
 	
-	function UpdateData(db, data, success) {
+	function updateData(db, data, success) {
 	    if (db == 'both') {
 		  var url = apiUrl + 'products/' + $scope.basicId.id + '/' + $scope.basicId.attribute.new + '/' + $scope.basicId.attribute.old;
 	    } else if (db == 'linuxPl') {
