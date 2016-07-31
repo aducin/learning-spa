@@ -33,7 +33,8 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 
 .controller("ProductController", ["$scope", "$http", "apiUrl", '$routeParams', '$filter', '$window', function($scope, $http, apiUrl, $routeParams, $filter, $window){
   
-        $scope.basicUpdate = [];
+        var config = 'contenttype';
+	$scope.basicUpdate = [];
 	$scope.basicUpdate.message = null;
 	$scope.data = {
 	      categorySelect: null,
@@ -50,6 +51,8 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	$scope.fullEdition.discount.new.reductionType = undefined;
 	$scope.fullEdition.discount.old = [];
 	$scope.fullEdition.discount.old.reductionType = undefined;
+	$scope.fullEdition.modified = undefined;
+	$scope.fullEdition.deletePhoto = undefined;
 	$scope.names = null;
   
 	function idCheck($scope, $routeParams) {
@@ -127,6 +130,25 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 		  }
 	      })
 	}
+	
+	function updateData(db, data, success) {
+	    if (db == 'both') {
+		  var url = apiUrl + 'products/' + $scope.basicId.id + '/' + $scope.basicId.attribute.new + '/' + $scope.basicId.attribute.old;
+	    } else if (db == 'linuxPl') {
+		  var url = apiUrl + 'products/' + $scope.basicId.id + '/' + $scope.basicId.attribute.new;
+	    } else if (db == 'ogicom') {
+		  var url = apiUrl + 'products/' + $scope.basicId.id + '/' + $scope.basicId.attribute.old;
+	    }
+
+            $http.put(url, data, config)
+            .then(function (response) {
+                $scope.basicUpdate = response.data;
+		if ($scope.basicUpdate.success == true) {	
+		      $scope.basicUpdate.message = success;
+		      checkIdBasic('true');
+		}
+            })
+	};
 	
 	$http.get(apiUrl + 'categories')
 	      .then(function(response){
@@ -230,9 +252,27 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 		id: $scope.fullEdition.id,
 		name: $scope.fullEdition.name,
                 descriptionShort: $scope.fullEdition.descriptionShort,
-		description: $scope.fullEdition.description
+		description: $scope.fullEdition.description,
+		linkRewrite: $scope.fullEdition.linkRewrite,
+		metaTitle: $scope.fullEdition.metaTitle,
+		metaDescription: $scope.fullEdition.metaDescription,
+		tagString: $scope.fullEdition.currentTag,
+		quantity: $scope.fullEdition.quantity.new,
+		manufactorer: $scope.fullEdition.manufactorerSingle,
+		condition: $scope.fullEdition.condition,
+		active: $scope.fullEdition.active,
+		priceNew: $scope.fullEdition.price.new,
+		priceOld: $scope.fullEdition.price.old,
+		categories: $scope.fullEdition.categories,
+		deletePhoto: $scope.fullEdition.deletePhoto,
+		modified: $scope.fullEdition.modified
               });
-	      console.log(categories);
+	      var url = apiUrl + 'products/' + $scope.fullEdition.id + '/' + $scope.fullEdition.attribute.new + '/' + $scope.fullEdition.attribute.old;
+	      $http.put(url, data, config)
+	      .then(function (response) {
+		    $scope.fullUpdate = response.data;
+		    console.log($scope.fullUpdate);	    
+              })
 	}
 	
         $scope.multiplyDesc = function () {
@@ -269,24 +309,4 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	    updateData(db, data, success);
         };
 	
-	function updateData(db, data, success) {
-	    if (db == 'both') {
-		  var url = apiUrl + 'products/' + $scope.basicId.id + '/' + $scope.basicId.attribute.new + '/' + $scope.basicId.attribute.old;
-	    } else if (db == 'linuxPl') {
-		  var url = apiUrl + 'products/' + $scope.basicId.id + '/' + $scope.basicId.attribute.new;
-	    } else if (db == 'ogicom') {
-		  var url = apiUrl + 'products/' + $scope.basicId.id + '/' + $scope.basicId.attribute.old;
-	    }
-	    var config = 'contenttype';
-
-            $http.put(url, data, config)
-            .then(function (response) {
-                $scope.basicUpdate = response.data;
-		if ($scope.basicUpdate.success == true) {	
-		      $scope.basicUpdate.message = success;
-		      CheckIdBasic('true');
-		}
-            })
-	};
-
 }]);

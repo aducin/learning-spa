@@ -161,7 +161,7 @@
 		  <div class="col-xs-12 marginBottom">
 		      <label class="col-xs-2 marginTop">Link do produktu</label>
 		      <div class="col-xs-10">
-			  <input value="{{fullEdition.linkRewrite}}" class="form-control borderSolid" type="text" />
+			  <input ng-model="fullEdition.linkRewrite" value="{{fullEdition.linkRewrite}}" class="form-control borderSolid" type="text" />
 		      </div>
 		  </div>
 		  <div class="col-xs-12 marginBottom">
@@ -232,7 +232,7 @@
 			  <button ng-if="displayCategory" ng-click="displayCategories()" class="btn btn-primary marginTop" style="margin-bottom: 8px;">Zwiń listę</button>
 			  <span ng-if="displayCategory" ng-repeat="item in fullEdition.categories">
 			      <p>
-				  <input type="checkbox" name="categories[]" value="{{item.id}}" ng-model="item.checked"/><b> {{item.metaTitle}}</b>
+				  <input type="checkbox" value="{{item.id}}" ng-model="item.checked"/><b> {{item.metaTitle}}</b>
 			      </p>
 			  </span>
 		      </div>
@@ -246,6 +246,18 @@
 			  <div ng-repeat="item in fullEdition.images">
 			      <img ng-click="displayPhotos()" ng-src="{{item}}" class="pull-left" height="159" width="159">
 			  </div>
+		      </div>
+		  </div>
+		  <div class="col-xs-12 marginBottom">
+		      <label class="col-xs-2 marginTop">Usuń zdjęcia</label>
+		      <div class="col-xs-1">
+			  <input ng-model="fullEdition.deletePhoto" style="margin-left: -12px;" class="form-control borderSolid pull-left" type="checkbox" />
+		      </div>
+		  </div>
+		  <div class="col-xs-12 marginBottom">
+		      <label class="col-xs-2">Zapisz produkt jako podmieniony</label>
+		      <div class="col-xs-1">
+			  <input ng-model="fullEdition.modified" style="margin-left: -12px;" class="form-control borderSolid pull-left" type="checkbox" />
 		      </div>
 		  </div>
 		  <div class="col-xs-12 marginBottom">
