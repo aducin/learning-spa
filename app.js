@@ -37,8 +37,12 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	$scope.basicUpdate = [];
 	$scope.basicUpdate.message = null;
 	$scope.data = {
+	      activity: null,
 	      categorySelect: null,
+	      conditions: null,
 	      manufacturerSelect: null,
+	      modified: null,
+	      modifiedDelete: null,
 	      singleSelect: null,
 	      searchResult: null,
 	      searchResultLength: null,
@@ -54,6 +58,36 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	$scope.fullEdition.modified = undefined;
 	$scope.fullEdition.deletePhoto = undefined;
 	$scope.names = null;
+	
+	$http.get(apiUrl + 'categories')
+	      .then(function(response){
+		      $scope.categories = response.data;
+	      }) 
+	      
+	$http.get(apiUrl + 'manufacturers')
+	      .then(function(response){
+		      $scope.manufactorers = response.data;
+	      })
+	
+	$http.get(apiUrl + 'products/conditions')
+	      .then(function(response){
+		      $scope.data.activity = response.data.productActivity;
+		      $scope.data.conditions = response.data.productConditions;
+	      })         
+	
+	$scope.checkIdBasic = function () {
+	      checkIdBasic();
+	};
+	
+	function checkModified(deleteSuccess) {
+	      $http.get(apiUrl + 'products/modified')
+	      .then(function(response){
+		      $scope.data.modified = response.data;
+		      if (deleteSuccess == 'delete') {
+			    $scope.data.modifiedDelete = undefined;
+		      }
+	      }) 
+	}
   
 	function idCheck($scope, $routeParams) {
 	      var currentId = $routeParams.id;
@@ -75,14 +109,14 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 				  $scope.fullEdition.manufactorerSingle = $scope.fullEdition.manufactorers[i];
 			      }
 			  }
-			  for (var i = 0; i < $scope.fullEdition.productConditions.length; i++) {
-				if ($scope.fullEdition.condition == $scope.fullEdition.productConditions[i].value) {
-				      $scope.fullEdition.condition = $scope.fullEdition.productConditions[i];
+			  for (var i = 0; i < $scope.data.activity.length; i++) {
+				if ($scope.fullEdition.active == $scope.data.activity[i].value) {
+				      $scope.fullEdition.active = $scope.data.activity[i];
 				}
 			  }
-			  for (var i = 0; i < $scope.fullEdition.productActivity.length; i++) {
-				if ($scope.fullEdition.active == $scope.fullEdition.productActivity[i].value) {
-				      $scope.fullEdition.active = $scope.fullEdition.productActivity[i];
+			  for (var i = 0; i < $scope.data.conditions.length; i++) {
+				if ($scope.fullEdition.condition == $scope.data.conditions[i].value) {
+				      $scope.fullEdition.condition = $scope.data.conditions[i];
 				}
 			  }
 			  if ($scope.fullEdition.discount.new.reductionType == 'percentage') {
@@ -97,6 +131,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	      }
 	}
 	
+	checkModified();
 	idCheck($scope, $routeParams);
 	
 	function checkIdBasic(repeat) {
@@ -148,20 +183,6 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 		      checkIdBasic('true');
 		}
             })
-	};
-	
-	$http.get(apiUrl + 'categories')
-	      .then(function(response){
-		      $scope.categories = response.data;
-	      }) 
-	      
-	$http.get(apiUrl + 'manufacturers')
-	      .then(function(response){
-		      $scope.manufactorers = response.data;
-	      })
-	
-	$scope.checkIdBasic = function () {
-	      checkIdBasic();
 	};
 	
 	$scope.checkName = function () {
@@ -219,6 +240,10 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	$scope.checkIdBasicRemove = function () {
 	      delete $scope.basicId;
 	};
+	
+	$scope.checkModified = function () {
+	      checkModified('delete');
+	}
 	 
 	$scope.checkNameConditions = function () {
 	      if ($scope.nameAdditionalConditions == undefined) {
@@ -228,6 +253,19 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 		    delete $scope.nameAdditionalConditions;
 	      }
 	};
+	
+	$scope.deleteModified = function (id) {
+		var url = apiUrl + 'products/modified/' + id;
+		$http.delete(url, config)
+		.then(function(response){
+		      $scope.data.modifiedDelete = response.data;
+		      if ($scope.data.modifiedDelete.success == true) {
+			      checkModified();
+		      } else {
+			      $scope.data.modifiedDelete.error = true;
+		      }
+		})  
+	}
 	
 	$scope.displayCategories = function () {
 	      if ($scope.displayCategory == undefined) {
@@ -250,6 +288,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	      var data = $.param({
 		scope: 'full',
 		id: $scope.fullEdition.id,
+		attribute: $scope.fullEdition.attribute,
 		name: $scope.fullEdition.name,
                 descriptionShort: $scope.fullEdition.descriptionShort,
 		description: $scope.fullEdition.description,
