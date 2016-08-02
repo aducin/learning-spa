@@ -1,6 +1,5 @@
 angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 
-//.constant("apiUrl", "http://localhost:3000/")
 .constant("apiUrl", "http://modele-ad9bis.pl/cms_spa/web/app_dev.php/")
 
 .config(['$routeProvider', function($routeProvider){
@@ -14,6 +13,10 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 				    controller: "OrderController",
 				    controllerAs: "order"
 				  })
+		.when('/orders/:dataBase/:id',{
+				    templateUrl: "orders.html",
+				    controller: "OrderController",
+				  })
                 .when('/products',{
 				    templateUrl: "products.html",
 				    controller: "ProductController",
@@ -23,13 +26,62 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 		  		    templateUrl: "products.html",
 				    controller: "ProductController",
 				  })
+		.when('/products/:historyId/history',{
+		  		    templateUrl: "products.html",
+				    controller: "ProductController",
+				  })
                 .otherwise({redirectTo:'/'});
 }])
 
-.controller('OrderController', function() {
-  var self = this;
-  self.message = "Tutaj będzie panel obsługi zamówień!";
-})
+.controller('OrderController', ["$scope", "$http", "apiUrl", '$routeParams', '$window', function($scope, $http, apiUrl, $routeParams, $window) {
+  
+	$scope.dbUrl = null;
+	$scope.orderData = [];
+	$scope.orderDb = null;
+	$scope.noOrder = null;
+	
+	function idCheck($scope, $routeParams) {
+	        if ($routeParams.id != undefined && $routeParams.dataBase != undefined) {
+			if ($routeParams.dataBase == 'new' || $routeParams.dataBase == 'old') {
+				$scope.dbUrl = $routeParams.dataBase;  
+				$scope.currentId = $routeParams.id;
+				$http.get(apiUrl + 'orders/' + $scope.dbUrl + '/' + $scope.currentId)
+				.then(function(response){
+					$scope.orderData = response.data;
+					if ($scope.orderDb == 'old') {
+						$scope.currentDb = 'stary';
+					} else {
+						$scope.currentDb = 'nowy';
+					}
+					if ($scope.orderData.success == false) {
+						delete $scope.orderData;
+						delete $scope.orderId;
+						$scope.noOrder = 'W ' + $scope.currentDb + 'm sklepie brak zamówienia o nr: ' + $scope.currentId;
+					} else {
+						delete $scope.noOrder;
+						$scope.orderData.display = true;
+					}
+				}) 
+			} else {
+				$scope.noOrder = 'Podano niewłaściwy adres bazy danych!';
+				return false;
+			}
+		}
+	}
+	
+	idCheck($scope, $routeParams);
+	
+	$scope.orderSearch = function() {
+	      if ($scope.orderDb == 0 || $scope.orderId == undefined) {
+		    return false;
+	      }
+	      if (isNaN($scope.orderId) == true) {
+		     $scope.noOrder = '"' + $scope.orderId + '"...? To ma być numer?';
+		     delete $scope.orderId;
+	      }
+	      window.location = '#/orders/' + $scope.orderDb + '/' + $scope.orderId;
+	}
+}])
 
 .controller("ProductController", ["$scope", "$http", "apiUrl", '$routeParams', '$filter', '$window', function($scope, $http, apiUrl, $routeParams, $filter, $window){
   
@@ -82,7 +134,9 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	function checkModified(deleteSuccess) {
 	      $http.get(apiUrl + 'products/modified')
 	      .then(function(response){
-		      $scope.data.modified = response.data;
+		      if (!$routeParams.id) {
+			  $scope.data.modified = response.data;
+		      }
 		      if (deleteSuccess == 'delete') {
 			    $scope.data.modifiedDelete = undefined;
 		      }
@@ -93,10 +147,16 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	      var currentId = $routeParams.id;
 	      if ($routeParams.id != undefined) {
 		    $scope.productId = $routeParams.id;
+		    if (isNaN($scope.productId) == true) {
+			  window.location = 'http://modele-ad9bis.pl/learning-spa/#/products';
+		    }
 		    var currentUrl = apiUrl + 'products/' + $scope.productId;
 		    $http.get(currentUrl)
 		    .then(function(response){
 			  $scope.fullEdition = response.data;
+			  if ($scope.fullEdition.success == false) {
+				window.location = 'http://modele-ad9bis.pl/learning-spa/#/products';
+			  }
 			  $scope.fullEdition.descriptionOriginal = $scope.fullEdition.description;
 			  var currentTag = '';
 			  for (var i = 0; i < $scope.fullEdition.productTags.length; i++) {
@@ -128,16 +188,34 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 			  }
 		    })
 		    $scope.productDetail = 'Pełna edycja produktu nr: ' + $scope.productId;
+		    $scope.disabled = true;
+	      } else if ($routeParams.historyId != undefined) {
+		    $http.get(apiUrl + 'products/' + $routeParams.historyId + '/history')
+		    .then(function(response){
+			      $scope.disabled = true;
+			      delete $scope.data.modified;
+			      $scope.id = $routeParams.historyId;
+			      $scope.history = response.data;
+			      if ($scope.history.success == false) {
+				    delete $scope.history;
+				    $scope.historyError = 'Brak historii zmian produktu ID: ' + $routeParams.historyId + '!';
+			      }
+			      
+		    }) 
+	      } else {
+		    checkModified();
 	      }
 	}
 	
-	checkModified();
 	idCheck($scope, $routeParams);
 	
 	function checkIdBasic(repeat) {
-	      if ($scope.checkId == undefined) {
+	      if (($scope.checkId == undefined) || ( isNaN($scope.checkId) == true)) {
+		  delete $scope.checkId;
 		  return false;
 	      }
+	      delete $scope.basicName;
+	      delete $scope.history;
 	      delete $scope.productDetail;
 	      if(repeat != 'true') {
 		  delete $scope.basicUpdate.message;
@@ -152,10 +230,16 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	      $http.get(currentUrl)
 	      .then(function(response){
 		  if(response.data.success == false) {
+			if (response.data.reason == 'no product') {
+			      $scope.noProduct = 'Brak produktu o ID: ' + $scope.checkId;
+			      delete $scope.checkId;
+			}
 			$scope.attributeSelect = response.data.dataNew;
 			delete $scope.basicId;
 		  } else {
+			delete $scope.noProduct;
 			delete $scope.nameAdditionalConditions;
+			delete $scope.names;
 			delete $scope.attributeSelect;
 			$scope.data.singleSelect = null;
 			$scope.basicId = response.data;
@@ -187,6 +271,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	
 	$scope.checkName = function () {
 	      if ($scope.basicName.length < 3) {
+		    delete $scope.noProduct;
 		    $scope.data.searchResult = null;
 		    $scope.data.searchResultLength = null;
 	            $scope.names = null;
@@ -198,15 +283,16 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	      if ($scope.data.categorySelect == null) {
 		  $scope.data.categorySelect = 0;
 	      }
+	      delete $scope.checkId;
 	      delete $scope.basicId;
-	      $scope.basicName;
 	      $http.get(apiUrl + 'products?search=' + $scope.basicName + '&manufacturer=' + $scope.data.manufacturerSelect + '&category=' + $scope.data.categorySelect)
 	      .then(function(response){
 		      if(response.data.success == false) {
+			  $scope.noProduct = 'Brak produktu o nazwie: ' + $scope.basicName;
 			  $scope.names = null;
-			  $scope.data.searchResult = response.data.reason;
 			  $scope.data.searchResultLength = null;
 		      } else {
+		          delete $scope.noProduct;
 			  $scope.data.searchResult = 'Wyniki wyszukiwania dla frazy: "' + $scope.basicName + '". ';
 			  if (response.data.length == 1) {
 				var lengthFinish = ' produkt.';
@@ -268,6 +354,9 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	}
 	
 	$scope.displayCategories = function () {
+	      if ($scope.fullUpdate === 'success') {
+		  return false;
+	      }
 	      if ($scope.displayCategory == undefined) {
 		    $scope.displayCategory = true;
 	      } else {
@@ -310,7 +399,10 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	      $http.put(url, data, config)
 	      .then(function (response) {
 		    $scope.fullUpdate = response.data;
-		    console.log($scope.fullUpdate);	    
+		    if ($scope.fullUpdate === 'true') {
+			$scope.fullUpdate = 'success';
+			$scope.categoryList={'background-color':'#eee', 'cursor':'not-allowed'}
+		    }
               })
 	}
 	
@@ -322,7 +414,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	      $scope.fullEdition.metaTitle = $scope.fullEdition.name;
 	}
 	
-	$scope.openInNewWindow = function(){
+	$scope.openInNewWindow = function() {
 	      $window.open($scope.basicId.imageUrlMain);
 	}
 	

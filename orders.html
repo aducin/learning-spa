@@ -1,26 +1,152 @@
+<style>
+      .background {
+	    background-color: #FFFACD;
+	    border-radius: 10px;
+	    padding-bottom: 20px;
+      }
+      .backgroundLightPink {
+	    background-color: #FFFFF0;
+	    border-radius: 10px;
+      }
+      .border {
+	    border: 1px solid;
+	    border-radius: 10px;
+	    border-color: #A9A9A9;
+      }
+      .centered {
+	    text-align: center;
+      }
+      .marginBottom20 {
+	    margin-bottom: 20px;
+      }
+      .marginTop10 {
+	    margin-top: 10px;
+      }
+      .minusMarginTop7 {
+	    margin-top: -7px;
+      }
+</style>
 <nav class="navbar navbar-inverse navbar-fixed-top">
 	<div class="container-fluid">
-	      <div class="navbar-header">
-		      <a class="navbar-brand" href="#/">Witaj w nowej wersji CMS!</a>
-	      </div>
-	      <ul class="nav navbar-nav">
-		     <li><a href="#/products">Produkty</a></li>
-		     <li class="active"><a href="#/orders">Zamówienia</a></li>
-		     <li><a href="#/postal">Wysyłki</a></li> 
-	      </ul>
+	      <div class="col-xs-12">
+		    <div class="navbar-header">
+			    <a class="navbar-brand" href="#/">Witaj w nowej wersji CMS!</a>
+		    </div>
+		    <ul class="nav navbar-nav">
+			  <li><a href="#/products">Produkty</a></li>
+			  <li class="active"><a href="#/orders">Zamówienia</a></li>
+			  <li><a href="#/postal">Wysyłki</a></li> 
+		    </ul>
+	        </div>
+	        <div class="col-xs-12">
+		      <form class="navbar-form">
+			    <div class="col-xs-5">
+			        <div class="form-group">
+					<label>
+					      <h2><span class="label label label-info">
+						    <span class="glyphicon glyphicon-euro" aria-hidden="true"></span>  Zamówienie</span>
+					      </h2>
+					</label>
+					<select ng-model="orderDb" ng-init="orderDb='0'" class="form-control minusMarginTop7">
+					      <option class="text-warning" value="0">Wybierz panel</option>
+					      <option class="text-primary" value="old">Stary panel</option>
+					      <option class="text-primary" value="new">Nowy panel</option>
+					</select>
+					<input ng-model="orderId" type="text" placeholder="Podaj numer" class="form-control minusMarginTop7 centered" style="width: 140px;">
+					<button ng-disabled="" ng-click="orderSearch()" class="btn btn-success minusMarginTop7">Wyszukaj</button>
+				</div>
+			    </div>
+			    <div class="col-xs-7">
+			        <div class="form-group pull-right">
+					<label>
+					      <h2>
+						    <span class="label label label-info">
+						    <span class="glyphicon glyphicon-eye-open" aria-hidden="true" ></span>  Pozostałe akcje</span>
+					      </h2>
+					</label>
+					<select ng-disabled="orderData.display" ng-model="otherAction" ng-init="otherAction='0'" class="form-control minusMarginTop7">
+					      <option class="text-warning" value="0" class="icon">Wybierz akcję</option>
+					      <option class="text-primary" value="voucher">Sprawdź numer kuponu (SP)</option>
+					      <option class="text-primary" value="voucherCount">Oblicz 15% rabat (SP)</option>
+					      <option class="text-primary" value="mail">Wyślij ponowny mail (SP)</option>
+					      <option class="text-primary" value="postalOld">Prześlij numer przesyłki (SP)</option>
+					      <option class="text-primary" value="postalNew">Prześlij numer przesyłki (NP)</option>
+					</select>
+					<input ng-disabled="orderData.display" type="text" placeholder="Podaj numer zamówienia" class="form-control minusMarginTop7 centered">
+					<button ng-disabled="orderData.display" ng-click="" class="btn btn-success minusMarginTop7">Wyszukaj</button>
+				</div>
+			    </div>
+			</form>
+	        </div>
 	</div>
 </nav>
 
 <!-- Main jumbotron for a primary marketing message or call to action -->
     <div class="jumbotron">
       <div class="container">
-        <p></p>
+        <p>					
+        </p>
       </div>
     </div>
     
+        <div ng-if="noOrder" class="container">
+		<div class="col-xs-12 centered alert alert-danger marginTop">
+			  <strong>UWAGA!</strong> {{noOrder}}
+		</div>
+        </div>
+        <div ng-if="orderData.display" class="container">
+		<div class="col-xs-12 marginBottom background">
+		      <h2 class="centered">Szczegóły zamówienia nr <b>{{currentId}}</b> ({{orderData.reference}}) - {{currentDb}} panel.</h2>
+		      <div class="col-xs-4 marginTop">
+			    <h4>Klient: <b>{{orderData.customer.firstname}} {{orderData.customer.lastname}}</b></h4>
+		      </div>
+		      <div class="col-xs-5 marginTop">
+			    <h4>Adres e-mail: <b>{{orderData.customer.email}}</b></h4>
+		      </div>
+		      <div class="col-xs-3 marginTop">
+			    <h4>Kwota zamówienia: <b>{{orderData.totalPaid}} zł</b></h4>
+		      </div>
+		</div>
+	</div>
+	<div ng-if="orderData.display" class="container">
+		<div class="col-xs-12">
+		      <div class="col-xs-1">
+		      </div>
+		      <div class="col-xs-10 marginBottom backgroundLightPink">
+			    <table>
+				  <tr>
+					  <th class="centered" style="width: 10%;">Miniatura</th>
+					  <th class="centered" style="width: 10%;">Numer ID</th> 
+					  <th class="centered" style="width: 37%;">Nazwa</th>
+					  <th class="centered" style="width: 10%;">Na stanie </th>
+					  <th class="centered" style="width: 12%;">Na stanie<br>(drugi sklep)</th>
+					  <th class="centered" style="width: 10%;">Zamówione</th>
+					  <th class="centered" style="width: 10%;">Opcje</th>
+				  </tr>
+				  <tr ng-repeat="item in orderData.cartDetails">
+					  <td><img ng-src="{{item.cover}}" class="border" height="100" width="100"></td>
+					  <td class="centered">{{item.productId}}</td>
+					  <td class="centered">
+						<a href="http://ad9bis.vot.pl/weglarki-h0/{{item.productId}}-{{item.linkRewrite}}.html" target="blank">{{item.productName}}</a>
+					  </td>
+					  <td class="centered">{{item.quantity.current}}</td>
+					  <td class="centered">{{item.quantity.toUpdate}}</td>
+					  <td class="centered">{{item.productQuantity}}</td>
+					  <td class="centered">
+						<p><a class="btn btn-primary marginTop10" href="#/products/{{item.productId}}" role="button">Pełna edycja &raquo;</a></p>
+					  </td>
+				  </tr>
+			    </table>
+			    <a ng-href="#/orders/{{dbUrl}}/{{item.productId}}/even" class="btn btn-primary pull-left marginBottom20 marginTop10" role="button" >Wyrównaj ilości</a>
+			    <a ng-href="#/orders/" class="btn btn-danger pull-right marginBottom20" role="button" >Usuń wyniki</a>
+		      </div>
+		      <div class="col-xs-1">
+		      </div>
+		</div>
+        </div>
+    
 <div class="container">
-	<h1>{{ order.message }}</h1>
 	<footer>
-	  <p>&copy; 2016 Ad9BIS.</p>
+	  <p class="pull-right">&copy; 2016 Ad9BIS.</p>
 	</footer>
 </div> <!-- /container -->
