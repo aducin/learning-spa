@@ -62,7 +62,7 @@
 			    <input ng-model="postal.add" type="text" placeholder="Wpisz kwotę do dodania" class="form-control">
 		      </div>
 		      <div class="col-xs-2">
-			    <button ng-click="postalAdd()" class="btn btn-success width100">Dodaj środki</button>
+			    <button ng-click="postalChange('add')" class="btn btn-success width100">Dodaj środki</button>
 		      </div>
 		      <div class="col-xs-4">
 		      </div>
@@ -74,7 +74,7 @@
 			    <input ng-model="postal.subtract" type="text" placeholder="Wpisz kwotę do odjęcia" class="form-control">
 		      </div>
 		      <div class="col-xs-2">
-			    <button ng-click="postalSubtract()" class="btn btn-success width100">Odejmij środki</button>
+			    <button ng-click="postalChange('subtract')" class="btn btn-success width100">Odejmij środki</button>
 		      </div>
 		      <div class="col-xs-4">
 		      </div>
@@ -127,14 +127,14 @@
 		      </div>
 		</div>
 </div>
-<div ng-if="postal.error" class="container">
+<div ng-if="postalerror" class="container">
 	<div class="col-xs-12 centered alert alert-danger marginTop">
-			 <strong>UWAGA!</strong> {{postal.error}}
+			 <strong>UWAGA!</strong> {{postalerror}}
 	</div>
 </div>
-<div ng-if="postal.message" class="container">
+<div ng-if="postalmessage" class="container">
 	<div class="col-xs-12 centered alert alert-success marginTop">
-			 <strong>UWAGA!</strong> {{postal.reason}}
+			 <strong>UWAGA!</strong> {{postalmessage}}
 	</div>
 </div>
 		      

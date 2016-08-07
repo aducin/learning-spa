@@ -42,21 +42,26 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 
 .controller('PostalController', ["$scope", "$http", "apiUrl", function($scope, $http, apiUrl) {
   
-	var config = 'contenttype';
 	$scope.noPostal = null;
 	$scope.postal = [];
 	$scope.postal.inputAdd = undefined;
 	$scope.postal.inputSubtract = undefined;
+	$scope.postalerror = undefined;
+	$scope.postalmessage = undefined;
   
-	$http.get(apiUrl + 'postal')
-	.then(function(response){
-		if (response.data.success === true) {
-			$scope.postal = response.data;
-			$scope.postal.current = $scope.postal.current + ' zł';
-		} else {
-			$scope.noPostal = response.data.reason;
-		}
-	})
+	function getPostal() {
+	      $http.get(apiUrl + 'postal')
+	      .then(function(response){
+		      if (response.data.success === true) {
+			      $scope.postal = response.data;
+			      $scope.postal.current = $scope.postal.current + ' zł';
+		      } else {
+			      $scope.postalerror = response.data.reason;
+		      }
+	      })
+	}
+	
+	getPostal();
 	
 	$scope.inputAdd = function() {
 		if ($scope.postal.inputSubtract == true) {
@@ -80,17 +85,22 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 		}
 	}
 	
-	$scope.postalAdd = function() {
-		delete $scope.postal.error;
-		var amountToAdd = $scope.postal.add;
-		if (amountToAdd == undefined || isNaN(amountToAdd) == true) {
-		      $scope.postal.error = 'To chyba nie jest numer...';
+	$scope.postalChange = function(action) {
+		if (action == 'add') {
+		      var amount = $scope.postal.add;
+		} else if (action == 'subtract') {
+		      var amount = $scope.postal.subtract;
+		}
+		if (amount == undefined || isNaN(amount) == true) {
+		      $scope.postalerror = 'To chyba nie jest numer...';
 		      return false;
 		}
+		$scope.postalerror = undefined;
+		$scope.postalmessage = undefined;
 		var url = apiUrl + 'postal';
 		var data = $.param({
-		      action: 'add',
-		      amount: amountToAdd
+		      action: action,
+		      amount: amount
 	        });
 		$http({
 		    method: 'POST',
@@ -99,7 +109,12 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 		    headers: {'Content-Type': 'application/x-www-form-urlencoded'}
 		})
 		.then(function (response) {
-			alert(response.data);
+			if (response.data.success == false) {
+				$scope.postalerror = response.data.reason;
+			} else {
+				$scope.postalmessage = response.data.reason;
+				getPostal();
+			}
 		})
 	}
 }])
