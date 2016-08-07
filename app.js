@@ -13,6 +13,10 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 				    controller: "OrderController",
 				    controllerAs: "order"
 				  })
+		.when('/orders/:dataBase/:id/:command',{
+				    templateUrl: "orders.html",
+				    controller: "OrderController",
+				  })
 		.when('/orders/:dataBase/:id',{
 				    templateUrl: "orders.html",
 				    controller: "OrderController",
@@ -21,7 +25,10 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 				    templateUrl: "products.html",
 				    controller: "ProductController",
 				  })
-                .when('/postal',{template:'This is the postal Route'})
+                .when('/postal',{
+				    templateUrl: "postal.html",
+				    controller: "PostalController",
+				  })
 		.when('/products/:id',{
 		  		    templateUrl: "products.html",
 				    controller: "ProductController",
@@ -33,35 +40,164 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
                 .otherwise({redirectTo:'/'});
 }])
 
+.controller('PostalController', ["$scope", "$http", "apiUrl", function($scope, $http, apiUrl) {
+  
+	var config = 'contenttype';
+	$scope.noPostal = null;
+	$scope.postal = [];
+	$scope.postal.inputAdd = undefined;
+	$scope.postal.inputSubtract = undefined;
+  
+	$http.get(apiUrl + 'postal')
+	.then(function(response){
+		if (response.data.success === true) {
+			$scope.postal = response.data;
+			$scope.postal.current = $scope.postal.current + ' zł';
+		} else {
+			$scope.noPostal = response.data.reason;
+		}
+	})
+	
+	$scope.inputAdd = function() {
+		if ($scope.postal.inputSubtract == true) {
+		      $scope.postal.inputSubtract = undefined;
+		}
+		if ($scope.postal.inputAdd == undefined) {
+			$scope.postal.inputAdd = true;
+		} else {
+		        $scope.postal.inputAdd = undefined;
+		}	
+	}
+	
+	$scope.inputSubtract = function() {
+		if ($scope.postal.inputAdd == true) {
+		      $scope.postal.inputAdd = undefined;
+		}
+		if ($scope.postal.inputSubtract == undefined) {
+			$scope.postal.inputSubtract = true;
+		} else {
+		        $scope.postal.inputSubtract = undefined;
+		}
+	}
+	
+	$scope.postalAdd = function() {
+		delete $scope.postal.error;
+		var amountToAdd = $scope.postal.add;
+		if (amountToAdd == undefined || isNaN(amountToAdd) == true) {
+		      $scope.postal.error = 'To chyba nie jest numer...';
+		      return false;
+		}
+		var url = apiUrl + 'postal';
+		var data = $.param({
+		      action: 'add',
+		      amount: amountToAdd
+	        });
+		$http({
+		    method: 'POST',
+		    url: url,
+		    data: data,
+		    headers: {'Content-Type': 'application/x-www-form-urlencoded'}
+		})
+		.then(function (response) {
+			alert(response.data);
+		})
+	}
+}])
+
 .controller('OrderController', ["$scope", "$http", "apiUrl", '$routeParams', '$window', function($scope, $http, apiUrl, $routeParams, $window) {
   
 	$scope.dbUrl = null;
+	$scope.deliveryNumber = null;
+	$scope.discount = null;
+	$scope.email = null;
+	$scope.noOrder = null;
 	$scope.orderData = [];
 	$scope.orderDb = null;
-	$scope.noOrder = null;
+	$scope.orderUpdate = [];
+	$scope.otherActionId = null;
+	$scope.panelName = [];
+	$scope.updateResult = [];
 	
 	function idCheck($scope, $routeParams) {
-	        if ($routeParams.id != undefined && $routeParams.dataBase != undefined) {
+		if ($routeParams.id != undefined && $routeParams.dataBase != undefined) {
 			if ($routeParams.dataBase == 'new' || $routeParams.dataBase == 'old') {
 				$scope.dbUrl = $routeParams.dataBase;  
 				$scope.currentId = $routeParams.id;
-				$http.get(apiUrl + 'orders/' + $scope.dbUrl + '/' + $scope.currentId)
-				.then(function(response){
-					$scope.orderData = response.data;
-					if ($scope.orderDb == 'old') {
-						$scope.currentDb = 'stary';
+				if ($scope.dbUrl == 'old') {
+					$scope.currentDb = 'stary';
+					$scope.panelName.current = 'SP';
+					$scope.panelName.second = 'NP';
+				} else {
+					$scope.currentDb = 'nowy';
+					$scope.panelName.current = 'NP';
+					$scope.panelName.second = 'SP';
+				}
+				if ($routeParams.command != undefined && $routeParams.command != 'mail') {
+					if ($routeParams.command == 'even') {
+						var url = apiUrl + 'orders/' + $scope.dbUrl + '/' + $scope.currentId + '/even';
+						$http.put(url)
+						.then(function (response) {
+							$scope.orderUpdate = response.data;
+							if ($scope.orderUpdate.success == false) {
+							      $scope.noOrder = 'Nie udało się wyrównać ilości produktów!';
+							} else {
+							      $scope.updateResult = $scope.orderUpdate;
+							      console.log($scope.updateResult);
+							}
+						})
+					} else if ($routeParams.command == 'discount') {
+						if ($scope.dbUrl == 'new') {
+							$scope.noOrder = '15% rabat jest stosowany wyłącznie na starym sklepie!';
+							return false;
+						}
+						$http.get(apiUrl + 'orders/' + $scope.dbUrl + '/' + $scope.currentId + '?action=discount')
+						.then(function(response){
+						      $scope.discount = response.data;
+						      if ($scope.discount.success == false) { 
+							      $scope.noOrder = 'W starym sklepie brak zamówienia o nr: ' + $scope.currentId;
+							      return false;
+						      }
+						      $scope.discountResult = $scope.discount;
+						}) 
+					} else if ($routeParams.command == 'voucher') { 
+						if ($scope.dbUrl == 'new') {
+							$scope.noOrder = 'Kupony rabatowy przyznawane są wyłącznie na starym sklepie!';
+							return false;
+						}
+						$http.get(apiUrl + 'orders/' + $scope.dbUrl + '/' + $scope.currentId + '?basic=true')
+						.then(function(response){
+						      var customer = response.data.customer.id;
+						      if (isNaN(customer) == true) {
+							    $scope.noOrder = 'Błąd przy pobieraniu informacji o kliencie!';
+						      }
+						      $http.get(apiUrl + 'customer/' + $scope.dbUrl + '/' + customer + '/vouchers')
+						      .then(function(response){
+							      $scope.voucherResult = response.data;
+						      })
+						})
 					} else {
-						$scope.currentDb = 'nowy';
+						$scope.noOrder = 'Podano niewłaściwą komendę!';
 					}
-					if ($scope.orderData.success == false) {
-						delete $scope.orderData;
-						delete $scope.orderId;
-						$scope.noOrder = 'W ' + $scope.currentDb + 'm sklepie brak zamówienia o nr: ' + $scope.currentId;
-					} else {
-						delete $scope.noOrder;
-						$scope.orderData.display = true;
-					}
-				}) 
+				} else {
+					$http.get(apiUrl + 'orders/' + $scope.dbUrl + '/' + $scope.currentId)
+					.then(function(response){
+						$scope.orderData = response.data;
+						if ($scope.orderData.success == false) {
+							delete $scope.orderData;
+							delete $scope.orderId;
+							$scope.noOrder = 'W ' + $scope.currentDb + 'm sklepie brak zamówienia o nr: ' + $scope.currentId;
+						} else {
+							delete $scope.noOrder;
+							if ($routeParams.command == 'mail') {
+							      $scope.orderData.display = true;
+							      $scope.orderData.undelivered = true;
+							} else {
+							      $scope.orderData.display = true;
+							      $scope.orderData.details = true;
+							}
+						}
+					}) 
+				}
 			} else {
 				$scope.noOrder = 'Podano niewłaściwy adres bazy danych!';
 				return false;
@@ -70,6 +206,82 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	}
 	
 	idCheck($scope, $routeParams);
+	
+	$scope.additionalAction = function() {
+	      if (isNaN($scope.otherActionId) == true) {
+		    $scope.noOrder = $scope.otherActionId +'...? To ma być numer?';
+		    return false;
+	      }
+	      if (($scope.otherAction == 0) || ($scope.otherActionId == null) || ($scope.otherActionId == 0)) {
+		    return false;
+	      } else if ($scope.otherAction == 'voucher') {
+		      window.location = '#/orders/old/' + $scope.otherActionId + '/voucher';
+	      } else if ($scope.otherAction == 'voucherCount') {
+		      window.location = '#/orders/old/' + $scope.otherActionId + '/discount';
+	      } else if ($scope.otherAction == 'mail') {
+		      window.location = '#/orders/old/' + $scope.otherActionId + '/mail';
+	      }
+	}
+	
+	$scope.mail = function(currentId, dbUrl, action) {
+	        $http.get(apiUrl + 'orders/' + dbUrl + '/' + currentId + '/mail?action=' + action + '&result=send')
+		.then(function(response){
+		        if (response.data.success === true) {
+			      $scope.email = response.data.reason;
+			} else {
+			      $scope.noOrder = response.data.reason;
+			}
+		})
+	}
+	
+	$scope.mailSendDeliveryNumber = function() {
+	  alert($scope.orderData.deliveryNumber);
+	       if ($scope.orderData.deliveryNumber == '' || $scope.orderData.deliveryNumber == '(00)') {
+		      $scope.noOrder = 'Wprowadź numer przesyłki!';
+		      return false;
+	       } else {
+		      $scope.noOrder = undefined;
+		      $http.get(apiUrl + 'orders/' + $scope.dbUrl + '/' + $scope.currentId + '/mail?action=deliveryNumber&result=send&deliveryNumber=' + $scope.orderData.deliveryNumber)
+		      .then(function(response){
+			      if (response.data.success === true) {
+				    $scope.email = response.data.reason;
+			      } else {
+				    $scope.noOrder = response.data.reason;
+			      }
+		      })
+	       }
+	}
+	
+	$scope.mailShowDeliveryNumber = function() {
+		if ($scope.showDeliveryNumber == undefined) {
+			$scope.orderData.deliveryNumber = '(00)';
+			$scope.showDeliveryNumber = true;
+		} else {
+			$scope.showDeliveryNumber = undefined;
+		}
+	}
+	
+	$scope.mailVoucher = function(action) {
+		if ($scope.voucherResult.lastVoucher == '' || isNaN($scope.voucherResult.lastVoucher) == true) {
+		      $scope.noOrder = 'To chyba nie jest numer kuponu...';
+		} else if ($scope.voucherResult.lastVoucher > 5) {
+		      $scope.noOrder = 'Maksymalna możliwa liczba to 5!';
+		} else {
+			if (action == 'display') {
+			$scope.noOrder = undefined;
+			window.open("http://modele-ad9bis.pl/cms_spa/web/app_dev.php/orders/" + $scope.dbUrl + "/" + $scope.currentId + "/mail?action=voucher&result=display&voucherNumber=" + $scope.voucherResult.lastVoucher);
+			} else if (action == 'send') {
+			      $http.get(apiUrl + 'orders/' + $scope.dbUrl + '/' + $scope.currentId + '/mail?action=voucher&result=send&voucherNumber=' + $scope.voucherResult.lastVoucher)
+			      .then(function(response){
+				      if (response.data.success === true) {
+					    $scope.email = response.data.reason;
+				      } else {
+					    $scope.noOrder = response.data.reason;
+				      }
+			      })
+			}
+		}
+	}
 	
 	$scope.orderSearch = function() {
 	      if ($scope.orderDb == 0 || $scope.orderId == undefined) {
@@ -88,6 +300,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
         var config = 'contenttype';
 	$scope.basicUpdate = [];
 	$scope.basicUpdate.message = null;
+	$scope.basicUpdate.messageError = null;
 	$scope.data = {
 	      activity: null,
 	      categorySelect: null,
@@ -148,14 +361,14 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	      if ($routeParams.id != undefined) {
 		    $scope.productId = $routeParams.id;
 		    if (isNaN($scope.productId) == true) {
-			  window.location = 'http://modele-ad9bis.pl/learning-spa/#/products';
+			  window.location = '#/products';
 		    }
 		    var currentUrl = apiUrl + 'products/' + $scope.productId;
 		    $http.get(currentUrl)
 		    .then(function(response){
 			  $scope.fullEdition = response.data;
 			  if ($scope.fullEdition.success == false) {
-				window.location = 'http://modele-ad9bis.pl/learning-spa/#/products';
+				window.location = '#/products';
 			  }
 			  $scope.fullEdition.descriptionOriginal = $scope.fullEdition.description;
 			  var currentTag = '';
@@ -432,6 +645,27 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	$scope.updateQuantity = function () {
 	    var db = document.getElementById("basicQuantityDb").value;
 	    var quantity = document.getElementById("basicQuantityInput").value;
+	    var error = $scope.basicUpdate.messageError = 'Po co chcesz zapisywać aktualną ilość';
+	    if (db === 'linuxPl') {
+		    if ($scope.basicId.quantity.new == quantity) {
+			  $scope.basicUpdate.message = null;
+			  $scope.basicUpdate.messageError = error + ' w nowej bazie?';
+			  return false;
+		    }
+	    } else if (db === 'ogicom') {
+		    if ($scope.basicId.quantity.old == quantity) {
+			  $scope.basicUpdate.message = null;
+			  $scope.basicUpdate.messageError = error + ' w starej bazie?';
+			  return false;
+		    }
+	    } else {
+		    if (($scope.basicId.quantity.new == quantity) && ($scope.basicId.quantity.old == quantity)) {
+			  $scope.basicUpdate.message = null;
+			  $scope.basicUpdate.messageError = error + ' w obu bazach?';
+			  return false;
+		    }
+	    }
+	    $scope.basicUpdate.messageError = null;
 	    var data = $.param({
 		db: db,
                 quantity: quantity

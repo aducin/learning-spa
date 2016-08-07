@@ -35,15 +35,15 @@
 		<div id="navbar" class="navbar-collapse collapse">
 			<form ng-submit="checkIdBasic()" class="navbar-form navbar-right">
 				<div class="form-group">
-				    <input type="text" placeholder="Podaj ID" class="form-control" ng-model="checkId">
+				    <input ng-disabled="history || historyError" type="text" placeholder="Podaj ID" class="form-control" ng-model="checkId">
 				</div>
 				<div ng-if="attributeSelect" class="form-group">
-				      <select ng-model="data.singleSelect" ng-init="data.singleSelect='0'" class="form-control">
+				      <select ng-disabled="history || historyError" ng-model="data.singleSelect" ng-init="data.singleSelect='0'" class="form-control">
 					      <option value="0">Wybierz kategorię</option>
 					      <option ng-repeat="item in attributeSelect" value="{{item.productAttributeBoth}}">{{item.name}}</option>
 				      </select>
 				</div>
-				<input type="submit" class="btn btn-success" value="Wyszukaj" />
+				<input ng-disabled="history || historyError" type="submit" class="btn btn-success" value="Wyszukaj" />
 			</form>
 			<form class="navbar-form navbar-right">
 			      <div class="form-group">
@@ -111,6 +111,12 @@
 					    <button ng-click="updatePrice()" class="btn btn-primary">Zapisz cenę</button>
 				    </div>
 			    </div>
+			    <div ng-if="basicUpdate.messageError" class="col-xs-12">
+				    <br>
+				    <div class="alert alert-danger fade in centered">
+					      <strong>{{basicUpdate.messageError}}</strong>
+				    </div>
+			    </div>
 			    <div ng-if="basicUpdate.message" class="col-xs-12">
 				    <br>
 				    <div class="alert alert-success fade in centered">
@@ -124,8 +130,8 @@
 				    <div class="col-xs-2" style="margin-left: 10px;">
 				    <a ng-href="#/products/{{basicId.id}}/history" class="btn btn-primary pull-right" role="button" >Historia ilości</a>
 				    </div>
-				    <div class="col-xs-6 pull-right">
-				    <button ng-click="checkIdBasicRemove()" class="btn btn-danger">Usuń wyniki</button>
+				    <div class="col-xs-2 pull-right">
+				    <a ng-href="#/products/" class="btn btn-danger" role="button">Usuń wyniki</a>
 				    </div>
 			    </div>
 		    </div>
@@ -295,8 +301,8 @@
 			    <a href="http://modele-ad9bis.pl/learning-spa/#/products" class="btn btn-danger" role="button">Usuń wyniki</a>
 		      </label>
 		  </div>
-		  <div ng-if="fullUpdate!='success'" class="col-xs-4">
-			    <input type="submit" class="btn btn-primary" value="Zapisz zmiany" style="margin-left: 10px;"  />
+		  <div class="col-xs-10">
+			    <input ng-if="fullUpdate!='success'" type="submit" class="btn btn-primary" value="Zapisz zmiany" style="margin-left: 10px;"  />
 			    <a href="http://modele-ad9bis.pl/learning-spa/#/products/{{fullEdition.id}}/history" class="btn btn-info pull-right" role="button">Historia ilości</a>
 		  </div>
 		  <div ng-if="fullUpdate=='success'" class="col-xs-12 centered alert alert-success marginTop">
@@ -375,17 +381,23 @@
 		    </div>
 	      </div>
 	      <div class="col-xs-12 marginTop">
-		    <a href="http://modele-ad9bis.pl/learning-spa/#/products/{{id}}" class="btn btn-primary" role="button">Powrót do produktu</a>
+		    <a ng-href="#/products/{{id}}" class="btn btn-primary" role="button">Powrót do produktu</a>
+		    <a ng-href="#/products/" class="btn btn-danger pull-right marginBottom marginTop" role="button">Usuń wyniki</a>
 	      </div>
 	</div>
 	<div ng-if="history">
-	      <a href="http://modele-ad9bis.pl/learning-spa/#/products/{{id}}" class="btn btn-primary marginBottom marginTop" role="button">Powrót do produktu</a>
+	      <a ng-href="#/products/{{id}}" class="btn btn-primary marginBottom marginTop" role="button">Powrót do produktu</a>
+	      <a ng-href="#/products/" class="btn btn-danger pull-right marginBottom marginTop" role="button">Usuń wyniki</a>
 	      <div class="container background">
-		      <h2 class="centered">Historia zmian ilości produktu nr: {{id}}</h2>
+		      <h2 class="centered">Historia zmian ilości produktu nr: <b>{{id}}</b> (10 najnowszych wpisów)</h2>
+		      <br>
 		      <div class="col-xs-12 marginBottom">
-			    <div class="col-xs-2">
+			    <div class="col-xs-1">
 			    </div>
-			    <div class="col-xs-2">
+			    <div class="col-xs-1">
+				  <h4 class="centered">Lp.</h4>
+			    </div>
+			    <div class="col-xs-3">
 				   <h4 class="centered">Data zmiany</h4>
 			    </div>
 			    <div class="col-xs-2">
@@ -395,15 +407,20 @@
 				   <h4 class="centered">Ilość po zmianie</h4>
 			    </div>
 			    <div class="col-xs-2">
-				   <h4 class="centered">Osoba</h4>
+				   <h4 class="centered">Użytkownik</h4>
+			    </div>
+			    <div class="col-xs-1">
 			    </div>
 		      </div>
 		      <hr>
 		      <div class="col-xs-12 marginTop" ng-repeat="item in history">
 			    <div class="col-xs-12 marginBottom">
-				  <div class="col-xs-2">
+				  <div class="col-xs-1">
 				  </div>
-				  <div class="col-xs-2">
+				  <div class="col-xs-1">
+					<p class="centered">{{item.lp}}.</p>
+				  </div>
+				  <div class="col-xs-3">
 					<p class="centered">{{item.date}}</p>
 				  </div>
 				  <div class="col-xs-2">
@@ -415,6 +432,8 @@
 				  <div class="col-xs-2">
 					<p class="centered">{{item.user}}</p>
 				  </div>
+				  <div class="col-xs-1">
+			    </div>
 			    </div>
 		      </div>
 	      </div>
