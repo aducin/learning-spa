@@ -110,26 +110,20 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	
 	getPostal();
 	
-	$scope.inputAdd = function() {
-		if ($scope.postal.inputSubtract == true) {
-		      $scope.postal.inputSubtract = undefined;
-		}
-		if ($scope.postal.inputAdd == undefined) {
-			$scope.postal.inputAdd = true;
+	$scope.inputChange = function(inputName) {
+		if (inputName === 'inputAdd') {
+			var secondName = 'inputSubtract';
 		} else {
-		        $scope.postal.inputAdd = undefined;
+			var secondName = 'inputAdd';
+		}
+		if ($scope.postal[secondName] == true) {
+		      $scope.postal[secondName] = undefined;
+		}
+		if ($scope.postal[inputName] == undefined) {
+			$scope.postal[inputName] = true;
+		} else {
+		        $scope.postal[inputName] = undefined;
 		}	
-	}
-	
-	$scope.inputSubtract = function() {
-		if ($scope.postal.inputAdd == true) {
-		      $scope.postal.inputAdd = undefined;
-		}
-		if ($scope.postal.inputSubtract == undefined) {
-			$scope.postal.inputSubtract = true;
-		} else {
-		        $scope.postal.inputSubtract = undefined;
-		}
 	}
 	
 	/*
