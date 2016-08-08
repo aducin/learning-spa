@@ -40,15 +40,57 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
                 .otherwise({redirectTo:'/'});
 }])
 
-.controller('PostalController', ["$scope", "$http", "apiUrl", function($scope, $http, apiUrl) {
+.service(
+		"postalService",
+		function( $http, apiUrl ) {
+				    return({
+				    getPostal: getPostal,
+				    insertPostal: insertPostal
+			});
+			      
+			function getPostal() {
+				    var request = $http.get(apiUrl + 'postal');
+				    return( request.then( handleSuccess, handleError ) );
+			}
+			  
+			function insertPostal(action, amount) {
+				var url = apiUrl + 'postal';
+				var data = $.param({
+					  action: action,
+					  amount: amount
+				});
+				var request = $http({
+					  method: 'POST',
+					  url: url,
+					  data: data,
+					  headers: {'Content-Type': 'application/x-www-form-urlencoded'}
+				})
+				return( request.then( handleSuccess, handleError ) );
+			}
+			
+			function handleError( response ) {
+				if (! angular.isObject( response.data ) || response.data.success != true) {
+					  $scope.postalError = response.data.reason;
+					  return false;
+			        }
+			}
+			
+			function handleSuccess( response ) {
+				return( response.data );
+			}
+		}
+	)
+
+.controller('PostalController', ["$scope", "$http", "apiUrl", "postalService", function($scope, $http, apiUrl, postalService) {
   
 	$scope.noPostal = null;
 	$scope.postal = [];
 	$scope.postal.inputAdd = undefined;
 	$scope.postal.inputSubtract = undefined;
-	$scope.postalerror = undefined;
-	$scope.postalmessage = undefined;
+	$scope.postalError = undefined;
+	$scope.postalMessage = undefined;
   
+	/*
 	function getPostal() {
 	      $http.get(apiUrl + 'postal')
 	      .then(function(response){
@@ -59,6 +101,15 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 			      $scope.postalerror = response.data.reason;
 		      }
 	      })
+	}
+	*/
+	
+	function getPostal() {
+		postalService.getPostal()
+		.then(function(response) { 
+			  $scope.postal = response;
+			  $scope.postal.current = $scope.postal.current + ' zł';
+		})
 	}
 	
 	getPostal();
@@ -85,12 +136,9 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 		}
 	}
 	
+	/*
 	$scope.postalChange = function(action) {
-		if (action == 'add') {
-		      var amount = $scope.postal.add;
-		} else if (action == 'subtract') {
-		      var amount = $scope.postal.subtract;
-		}
+		var amount = $scope.postal[action];
 		if (amount == undefined || isNaN(amount) == true) {
 		      $scope.postalerror = 'To chyba nie jest numer...';
 		      return false;
@@ -113,10 +161,31 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 				$scope.postalerror = response.data.reason;
 			} else {
 				$scope.postalmessage = response.data.reason;
+				$scope.postal.inputAdd = undefined;
+				$scope.postal.inputSubtract = undefined;
 				getPostal();
 			}
 		})
 	}
+	*/
+	
+	$scope.postalChange = function(action) {
+		var amount = $scope.postal[action];
+		if (amount == '' || isNaN(amount) == true) {
+			$scope.postalError = 'To chyba nie jest numer...';
+			return false;
+		}
+		$scope.postalError = undefined;
+		$scope.postalMessage = undefined;
+		postalService.insertPostal(action, amount)
+		.then(function(response) { 
+			$scope.postalMessage = response.reason;
+			$scope.postal.inputAdd = undefined;
+			$scope.postal.inputSubtract = undefined;
+			getPostal();
+		})
+	}
+	
 }])
 
 .controller('OrderController', ["$scope", "$http", "apiUrl", '$routeParams', '$window', function($scope, $http, apiUrl, $routeParams, $window) {
@@ -233,8 +302,10 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 		      window.location = '#/orders/old/' + $scope.otherActionId + '/voucher';
 	      } else if ($scope.otherAction == 'voucherCount') {
 		      window.location = '#/orders/old/' + $scope.otherActionId + '/discount';
-	      } else if ($scope.otherAction == 'mail') {
+	      } else if ($scope.otherAction == 'mailOld') {
 		      window.location = '#/orders/old/' + $scope.otherActionId + '/mail';
+	      } else if ($scope.otherAction == 'mailNew') {
+		      window.location = '#/orders/new/' + $scope.otherActionId + '/mail';
 	      }
 	}
 	
@@ -338,6 +409,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	$scope.fullEdition.modified = undefined;
 	$scope.fullEdition.deletePhoto = undefined;
 	$scope.names = null;
+	$scope.progress={'cursor':'wait'};
 	
 	$http.get(apiUrl + 'categories')
 	      .then(function(response){
@@ -349,11 +421,11 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 		      $scope.manufactorers = response.data;
 	      })
 	
-	$http.get(apiUrl + 'products/conditions')
-	      .then(function(response){
-		      $scope.data.activity = response.data.productActivity;
-		      $scope.data.conditions = response.data.productConditions;
-	      })         
+	//$http.get(apiUrl + 'products/conditions')
+	//      .then(function(response){
+	//	      $scope.data.activity = response.data.productActivity;
+	//	      $scope.data.conditions = response.data.productConditions;
+	//      })         
 	
 	$scope.checkIdBasic = function () {
 	      checkIdBasic();
@@ -378,45 +450,51 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 		    if (isNaN($scope.productId) == true) {
 			  window.location = '#/products';
 		    }
-		    var currentUrl = apiUrl + 'products/' + $scope.productId;
-		    $http.get(currentUrl)
+		    $http.get(apiUrl + 'products/conditions')
 		    .then(function(response){
-			  $scope.fullEdition = response.data;
-			  if ($scope.fullEdition.success == false) {
-				window.location = '#/products';
-			  }
-			  $scope.fullEdition.descriptionOriginal = $scope.fullEdition.description;
-			  var currentTag = '';
-			  for (var i = 0; i < $scope.fullEdition.productTags.length; i++) {
-			    currentTag = currentTag + $scope.fullEdition.productTags[i].name + ', ';
-			  }
-			  currentTag = currentTag.replace(/,\s*$/, "");
-			  $scope.fullEdition.currentTag = currentTag;
-			  for (var i = 0; i < $scope.fullEdition.manufactorers.length; i++) {
-			      if ($scope.fullEdition.manufactorer == $scope.fullEdition.manufactorers[i].id) {
-				  $scope.fullEdition.manufactorerSingle = $scope.fullEdition.manufactorers[i];
-			      }
-			  }
-			  for (var i = 0; i < $scope.data.activity.length; i++) {
-				if ($scope.fullEdition.active == $scope.data.activity[i].value) {
-				      $scope.fullEdition.active = $scope.data.activity[i];
-				}
-			  }
-			  for (var i = 0; i < $scope.data.conditions.length; i++) {
-				if ($scope.fullEdition.condition == $scope.data.conditions[i].value) {
-				      $scope.fullEdition.condition = $scope.data.conditions[i];
-				}
-			  }
-			  if ($scope.fullEdition.discount.new.reductionType == 'percentage') {
-				var discount = $scope.fullEdition.price.new * $scope.fullEdition.discount.new.reduction;
-				$scope.fullEdition.discount.new.realPrice = $scope.fullEdition.price.new - discount;
-			  }
-			  if ($scope.fullEdition.discount.old.reductionType == 'amount') {
-				$scope.fullEdition.discount.old.realPrice = $scope.fullEdition.price.old - $scope.fullEdition.discount.old.reduction;
-			  }
+			    $scope.data.activity = response.data.productActivity;
+			    $scope.data.conditions = response.data.productConditions;
+			    var currentUrl = apiUrl + 'products/' + $scope.productId;
+			    $http.get(currentUrl)
+			    .then(function(response){
+				  $scope.fullEdition = response.data;
+				  if ($scope.fullEdition.success == false) {
+					window.location = '#/products';
+				  }
+				  $scope.fullEdition.descriptionOriginal = $scope.fullEdition.description;
+				  var currentTag = '';
+				  for (var i = 0; i < $scope.fullEdition.productTags.length; i++) {
+				    currentTag = currentTag + $scope.fullEdition.productTags[i].name + ', ';
+				  }
+				  currentTag = currentTag.replace(/,\s*$/, "");
+				  $scope.fullEdition.currentTag = currentTag;
+				  for (var i = 0; i < $scope.fullEdition.manufactorers.length; i++) {
+				      if ($scope.fullEdition.manufactorer == $scope.fullEdition.manufactorers[i].id) {
+					  $scope.fullEdition.manufactorerSingle = $scope.fullEdition.manufactorers[i];
+				      }
+				  }
+				  for (var i = 0; i < $scope.data.activity.length; i++) {
+					if ($scope.fullEdition.active == $scope.data.activity[i].value) {
+					      $scope.fullEdition.active = $scope.data.activity[i];
+					}
+				  }
+				  for (var i = 0; i < $scope.data.conditions.length; i++) {
+					if ($scope.fullEdition.condition == $scope.data.conditions[i].value) {
+					      $scope.fullEdition.condition = $scope.data.conditions[i];
+					}
+				  }
+				  if ($scope.fullEdition.discount.new.reductionType == 'percentage') {
+					var discount = $scope.fullEdition.price.new * $scope.fullEdition.discount.new.reduction;
+					$scope.fullEdition.discount.new.realPrice = $scope.fullEdition.price.new - discount;
+				  }
+				  if ($scope.fullEdition.discount.old.reductionType == 'amount') {
+					$scope.fullEdition.discount.old.realPrice = $scope.fullEdition.price.old - $scope.fullEdition.discount.old.reduction;
+				  }
+			    })
 		    })
 		    $scope.productDetail = 'Pełna edycja produktu nr: ' + $scope.productId;
 		    $scope.disabled = true;
+		    $scope.progress = undefined;
 	      } else if ($routeParams.historyId != undefined) {
 		    $http.get(apiUrl + 'products/' + $routeParams.historyId + '/history')
 		    .then(function(response){
