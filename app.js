@@ -41,45 +41,41 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 }])
 
 .service(
-		"postalService",
-		function( $http, apiUrl ) {
-				    return({
-				    getPostal: getPostal,
-				    insertPostal: insertPostal
-			});
+	"postalService",
+	function( $http, apiUrl ) {
+		return({
+			getPostal: getPostal,
+			insertPostal: insertPostal
+		});
 			      
-			function getPostal() {
-				    var request = $http.get(apiUrl + 'postal');
-				    return( request.then( handleSuccess, handleError ) );
-			}
+		function getPostal() {
+			var request = $http.get(apiUrl + 'postal');
+			return( request.then( handleSuccess, handleError ) );
+		}
 			  
-			function insertPostal(action, amount) {
-				var url = apiUrl + 'postal';
-				var data = $.param({
-					  action: action,
-					  amount: amount
-				});
-				var request = $http({
-					  method: 'POST',
-					  url: url,
-					  data: data,
-					  headers: {'Content-Type': 'application/x-www-form-urlencoded'}
-				})
-				return( request.then( handleSuccess, handleError ) );
-			}
+		function insertPostal(action, amount) {
+			var url = apiUrl + 'postal';
+			var request = $http({
+				method: 'POST',
+				url: url,
+				data: "action=" + action + "&amount=" + amount,
+				headers: {'Content-Type': 'application/x-www-form-urlencoded'}
+			})
+			return( request.then( handleSuccess, handleError ) );
+		}
 			
-			function handleError( response ) {
-				if (! angular.isObject( response.data ) || response.data.success != true) {
-					  $scope.postalError = response.data.reason;
-					  return false;
-			        }
-			}
-			
-			function handleSuccess( response ) {
-				return( response.data );
+		function handleError( response ) {
+			if (! angular.isObject( response.data ) || response.data.success != true) {
+				$scope.postalError = response.data.reason;
+				return false;
 			}
 		}
-	)
+			
+		function handleSuccess( response ) {
+			return( response.data );
+		}
+	}
+)
 
 .controller('PostalController', ["$scope", "$http", "apiUrl", "postalService", function($scope, $http, apiUrl, postalService) {
   
