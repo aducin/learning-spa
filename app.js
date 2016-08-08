@@ -59,7 +59,6 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 				method: 'POST',
 				url: url,
 				data: "action=" + action + "&amount=" + amount,
-				headers: {'Content-Type': 'application/x-www-form-urlencoded'}
 			})
 			return( request.then( handleSuccess, handleError ) );
 		}
