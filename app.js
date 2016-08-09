@@ -67,7 +67,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	}
 )
 
-.controller('LoginController', ["$scope", "$http", '$window', "apiUrl", "loginService", function($scope, $http, $window, apiUrl, loginService) {
+.controller('LoginController', ["$scope", '$window', '$interval', "loginService", function($scope, $window, $interval, loginService) {
   
 	$scope.login = [];
   
@@ -87,6 +87,9 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	      .then(function (response) {
 			if (response.data.success === true) {
 			      $scope.login = response.data;
+			      $interval(function () {
+				      window.location = '#/products';
+			      }, 2000);
 			} else {
 			      $scope.login.error = response.data.reason;
 			}
@@ -95,7 +98,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
   
 }])
 
-.controller('PostalController', ["$scope", "$http", "apiUrl", "loginService", "postalService", function($scope, $http, apiUrl, loginService, postalService) {
+.controller('PostalController', ["$scope", "loginService", "postalService", function($scope, loginService, postalService) {
   
 	$scope.noPostal = null;
 	$scope.postal = [];
