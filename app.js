@@ -4,9 +4,9 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 
 .config(['$routeProvider', function($routeProvider){
                 $routeProvider
-                .when('/',{
-				    templateUrl: "products.html",
-				    controller: "ProductController",
+                .when('/login',{
+				    templateUrl: "login.html",
+				    controller: "LoginController",
 			   })
 		.when('/orders',{
 				    templateUrl: "orders.html",
@@ -37,46 +37,65 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 		  		    templateUrl: "products.html",
 				    controller: "ProductController",
 				  })
-                .otherwise({redirectTo:'/'});
+                .otherwise({redirectTo:'/login'});
 }])
 
 .service(
+	"loginService",
+	 function( $http, apiUrl ) {
+		this.login = function (email, password) {
+			return $http.get(apiUrl + 'login?email=' + email + '&password=' + password);
+		}
+		this.sessionCheck = function () {
+			return $http.get(apiUrl + 'login');
+		}
+	 }
+)
+
+.service(
 	"postalService",
-	function( $http, apiUrl ) {
-		return({
-			getPostal: getPostal,
-			insertPostal: insertPostal
-		});
-			      
-		function getPostal() {
-			var request = $http.get(apiUrl + 'postal');
-			return( request.then( handleSuccess, handleError ) );
+	function( $http, apiUrl ) {	      
+		this.getPostal = function () {
+			return $http.get(apiUrl + 'postal');
 		}
 			  
-		function insertPostal(action, amount) {
+		this.insertPostal = function (action, amount) {
 			var url = apiUrl + 'postal';
-			var request = $http({
-				method: 'POST',
-				url: url,
-				data: "action=" + action + "&amount=" + amount,
-			})
-			return( request.then( handleSuccess, handleError ) );
-		}
-			
-		function handleError( response ) {
-			if (! angular.isObject( response.data ) || response.data.success != true) {
-				$scope.postalError = response.data.reason;
-				return false;
-			}
-		}
-			
-		function handleSuccess( response ) {
-			return( response.data );
+			var data = { 'action' : action, 'amount' : amount };
+			return $http.post(url, data);
 		}
 	}
 )
 
-.controller('PostalController', ["$scope", "$http", "apiUrl", "postalService", function($scope, $http, apiUrl, postalService) {
+.controller('LoginController', ["$scope", "$http", '$window', "apiUrl", "loginService", function($scope, $http, $window, apiUrl, loginService) {
+  
+	$scope.login = [];
+  
+	loginService.sessionCheck()
+	.then(function (response) {
+		if (response.data.success === true) {
+			window.location = '#/products';
+		} else {
+			window.location = '#/login';
+		}
+	})
+	
+	$scope.loginAction = function() {
+	      var email = $scope.login.email;
+	      var password = $scope.login.password;
+	      loginService.login(email, password)
+	      .then(function (response) {
+			if (response.data.success === true) {
+			      $scope.login = response.data;
+			} else {
+			      $scope.login.error = response.data.reason;
+			}
+	      })
+	}
+  
+}])
+
+.controller('PostalController', ["$scope", "$http", "apiUrl", "loginService", "postalService", function($scope, $http, apiUrl, loginService, postalService) {
   
 	$scope.noPostal = null;
 	$scope.postal = [];
@@ -84,6 +103,17 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	$scope.postal.inputSubtract = undefined;
 	$scope.postalError = undefined;
 	$scope.postalMessage = undefined;
+	
+	function handleError ( response ) {
+		if (! angular.isObject( response.data ) || response.data.success != true) {
+			$scope.postalError = response.data.reason;
+			return false;
+		}
+	}
+			
+	function handleSuccess ( response ) {
+		return( response.data );
+	}
   
 	/*
 	function getPostal() {
@@ -101,13 +131,22 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	
 	function getPostal() {
 		postalService.getPostal()
-		.then(function(response) { 
-			  $scope.postal = response;
+		.then(function (response) {
+			  handleError( response );
+			  var result = handleSuccess( response ); 
+			  $scope.postal = result;
 			  $scope.postal.current = $scope.postal.current + ' zł';
 		})
 	}
 	
-	getPostal();
+	loginService.sessionCheck()
+	.then(function (response) {
+		if (response.data.success === true) {
+			getPostal();
+		} else {
+			window.location = '#/login';
+		}
+	})
 	
 	$scope.inputChange = function(inputName) {
 		if (inputName === 'inputAdd') {
@@ -167,8 +206,10 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 		$scope.postalError = undefined;
 		$scope.postalMessage = undefined;
 		postalService.insertPostal(action, amount)
-		.then(function(response) { 
-			$scope.postalMessage = response.reason;
+		.then(function(response) {
+			var result = handleError( response );
+			var result = handleSuccess( response );
+			$scope.postalMessage = result.reason;
 			$scope.postal.inputAdd = undefined;
 			$scope.postal.inputSubtract = undefined;
 			getPostal();
