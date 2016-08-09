@@ -8,6 +8,10 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 				    templateUrl: "login.html",
 				    controller: "LoginController",
 			   })
+		.when('/logout',{
+				    templateUrl: "login.html",
+				    controller: "LoginController",
+			   })
 		.when('/orders',{
 				    templateUrl: "orders.html",
 				    controller: "OrderController",
@@ -21,13 +25,13 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 				    templateUrl: "orders.html",
 				    controller: "OrderController",
 				  })
+		.when('/postal',{
+				    templateUrl: "postal.html",
+				    controller: "PostalController",
+				  })
                 .when('/products',{
 				    templateUrl: "products.html",
 				    controller: "ProductController",
-				  })
-                .when('/postal',{
-				    templateUrl: "postal.html",
-				    controller: "PostalController",
 				  })
 		.when('/products/:id',{
 		  		    templateUrl: "products.html",
@@ -46,8 +50,12 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 		this.login = function (email, password) {
 			return $http.get(apiUrl + 'login?email=' + email + '&password=' + password);
 		}
-		this.sessionCheck = function () {
-			return $http.get(apiUrl + 'login');
+		this.sessionCheck = function (action) {
+			if (action === 'login') {
+				return $http.get(apiUrl + 'login');
+			} else if (action === 'logout') {
+				return $http.get(apiUrl + 'logout');
+			}
 		}
 	 }
 )
@@ -67,11 +75,18 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	}
 )
 
-.controller('LoginController', ["$scope", '$window', '$interval', "loginService", function($scope, $window, $interval, loginService) {
+.controller('LoginController', ["$scope", '$window', '$timeout', "apiUrl", "loginService", function($scope, $window, $timeout, apiUrl, loginService) {
   
 	$scope.login = [];
+	
+	if (window.location.href == 'http://modele-ad9bis.pl/learning-spa/#/login') {
+		$scope.login.form = true;
+		var action = 'login';
+	} else if (window.location.href == 'http://modele-ad9bis.pl/learning-spa/#/logout') {
+		var action = 'logout';
+	}
   
-	loginService.sessionCheck()
+	loginService.sessionCheck(action)
 	.then(function (response) {
 		if (response.data.success === true) {
 			window.location = '#/products';
@@ -81,19 +96,19 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	})
 	
 	$scope.loginAction = function() {
-	      var email = $scope.login.email;
-	      var password = $scope.login.password;
-	      loginService.login(email, password)
-	      .then(function (response) {
+	        var email = $scope.login.email;
+	        var password = $scope.login.password;
+	        loginService.login(email, password)
+	        .then(function (response) {
 			if (response.data.success === true) {
-			      $scope.login = response.data;
-			      $interval(function () {
+			      $scope.login.success = response.data.reason;
+			      $timeout(function () {
 				      window.location = '#/products';
 			      }, 2000);
 			} else {
 			      $scope.login.error = response.data.reason;
 			}
-	      })
+	        })
 	}
   
 }])
@@ -142,7 +157,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 		})
 	}
 	
-	loginService.sessionCheck()
+	loginService.sessionCheck('login')
 	.then(function (response) {
 		if (response.data.success === true) {
 			getPostal();
@@ -221,7 +236,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	
 }])
 
-.controller('OrderController', ["$scope", "$http", "apiUrl", '$routeParams', '$window', function($scope, $http, apiUrl, $routeParams, $window) {
+.controller('OrderController', ["$scope", "$http", "apiUrl", '$routeParams', '$window', 'loginService', function($scope, $http, apiUrl, $routeParams, $window, loginService) {
   
 	$scope.dbUrl = null;
 	$scope.deliveryNumber = null;
@@ -322,7 +337,15 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 		}
 	}
 	
-	idCheck($scope, $routeParams);
+	loginService.sessionCheck('login')
+	.then(function (response) {
+		if (response.data.success === true) {
+			$scope.displayMain = true;
+			idCheck($scope, $routeParams);
+		} else {
+			window.location = '#/login';
+		}
+	})
 	
 	$scope.additionalAction = function() {
 	      if (isNaN($scope.otherActionId) == true) {
@@ -414,9 +437,9 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	}
 }])
 
-.controller("ProductController", ["$scope", "$http", "apiUrl", '$routeParams', '$filter', '$window', function($scope, $http, apiUrl, $routeParams, $filter, $window){
+.controller("ProductController", ["$scope", "$http", "apiUrl", '$routeParams', '$filter', '$window', 'loginService', function($scope, $http, apiUrl, $routeParams, $filter, $window, loginService){
   
-        var config = 'contenttype';
+	var config = 'contenttype';
 	$scope.basicUpdate = [];
 	$scope.basicUpdate.message = null;
 	$scope.basicUpdate.messageError = null;
@@ -458,11 +481,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	//      .then(function(response){
 	//	      $scope.data.activity = response.data.productActivity;
 	//	      $scope.data.conditions = response.data.productConditions;
-	//      })         
-	
-	$scope.checkIdBasic = function () {
-	      checkIdBasic();
-	};
+	//      })         	
 	
 	function checkModified(deleteSuccess) {
 	      $http.get(apiUrl + 'products/modified')
@@ -546,8 +565,6 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	      }
 	}
 	
-	idCheck($scope, $routeParams);
-	
 	function checkIdBasic(repeat) {
 	      if (($scope.checkId == undefined) || ( isNaN($scope.checkId) == true)) {
 		  delete $scope.checkId;
@@ -606,6 +623,20 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 		      checkIdBasic('true');
 		}
             })
+	};
+	
+	loginService.sessionCheck('login')
+	.then(function (response) {
+		if (response.data.success === true) {
+			$scope.displayMain = true;
+			idCheck($scope, $routeParams);
+		} else {
+			window.location = '#/login';
+		}
+	})
+	
+	$scope.checkIdBasic = function () {
+	      checkIdBasic();
 	};
 	
 	$scope.checkName = function () {

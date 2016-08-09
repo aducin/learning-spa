@@ -28,7 +28,8 @@
 	      <ul class="nav navbar-nav">
 		     <li class="active"><a href="#/products">Produkty</a></li>
 		     <li><a href="#/orders">Zamówienia</a></li>
-		     <li><a href="#/postal">Wysyłki</a></li> 
+		     <li><a href="#/postal">Wysyłki</a></li>
+		     <li><a href="#/logout">Wyloguj</a></li> 
 	      </ul>
 	</div>
 	<div class="container">
@@ -170,7 +171,7 @@
 </nav>
 
 <!-- Main jumbotron for a primary marketing message or call to action -->
-    <div class="jumbotron">
+    <div ng-if="displayMain" class="jumbotron">
       <div class="container">
         <p></p>
       </div>
@@ -181,7 +182,7 @@
 	<div ng-if="noProduct" class="container centered alert alert-danger">
 	      <strong>UWAGA!</strong> {{noProduct}}
 	</div>
-	<div class="container" ng-if="productDetail" id="fullUpdateColor">
+	<div class="container" ng-if="productDetail" ng-style="progress" id="fullUpdateColor">
 	      <form ng-submit="fullUpdate()">
 		  <h2 class="centered">
 		      <a href="http://ad9bis.vot.pl/weglarki-h0/{{fullEdition.id}}-{{fullEdition.linkRewrite}}.html" target="blank">{{productDetail}}</a>
@@ -448,9 +449,9 @@
 		      </div>
 	      </div>
 	</div>
-
+</div>
+<div ng-if="displayMain" class="container">
 	<hr>
-
 	<footer>
 	  <p class="pull-right">2016 Ad9BIS &copy;</p>
 	</footer>

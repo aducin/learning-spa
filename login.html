@@ -1,5 +1,5 @@
 <div class="container">
-    <div class="row">
+    <div ng-if="login.form" class="row">
         <div class="col-sm-6 col-md-4 col-md-offset-4">
 	    <div class="col-xs-12">
 		  <div class="col-xs-12">
@@ -8,10 +8,10 @@
 			    <form ng-submit="loginAction()" class="form-signin">
 				  <input ng-model="login.email" type="text" class="form-control" placeholder="Email" required autofocus>
 				  <div style="margin-top: 5%;"></div>
-				  <div ng-if="login.success" class="alert alert-success">{{login.reason}}</div>
-				  <div ng-if="login.error" class="alert alert-danger">{{login.error}}</div>
 				  <input ng-model="login.password" type="password" class="form-control" placeholder="Hasło" required>
 				  <div style="margin-top: 5%;"></div>
+				  <div ng-if="login.success" class="alert alert-success">{{login.success}}</div>
+				  <div ng-if="login.error" class="alert alert-danger">{{login.error}}</div>
 				  <div class="col-xs-1">
 				  </div>
 				  <div class="col-xs-10">

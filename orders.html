@@ -31,6 +31,9 @@
       .minusMarginTop8 {
 	    margin-top: -8px;
       }
+      .width100 {
+	    width: 100%;
+      }
 </style>
 <nav class="navbar navbar-inverse navbar-fixed-top">
 	<div class="container-fluid">
@@ -41,7 +44,8 @@
 		    <ul class="nav navbar-nav">
 			  <li><a href="#/products">Produkty</a></li>
 			  <li class="active"><a href="#/orders">Zamówienia</a></li>
-			  <li><a href="#/postal">Wysyłki</a></li> 
+			  <li><a href="#/postal">Wysyłki</a></li>
+			  <li><a href="#/logout">Wyloguj</a></li> 
 		    </ul>
 	        </div>
 		      <form class="navbar-form">
@@ -54,10 +58,10 @@
 						    <span class="glyphicon glyphicon-euro" aria-hidden="true" ></span> Zamówienia</span>
 					      </h2>
 					</label>
-					<select ng-model="orderDb" ng-init="orderDb='0'" class="form-control minusMarginTop8">
+					<select ng-model="orderDb" ng-init="orderDb='0'" class="form-control minusMarginTop8 width100">
 					      <option class="text-warning" value="0">Wybierz panel</option>
-					      <option class="text-primary" value="old">Zamówienie w starym sklepie</option>
-					      <option class="text-primary" value="new">Zamówienie w nowym sklepie</option>
+					      <option class="text-primary" value="old">Zamówienie - stary sklep</option>
+					      <option class="text-primary" value="new">Zamówienie - nowy sklep</option>
 					</select>
 					<input ng-model="orderId" type="text" placeholder="Podaj numer zamówienia" class="form-control minusMarginTop8 centered">
 					<button ng-click="orderSearch()" class="btn btn-success minusMarginTop8">Wyszukaj</button>
@@ -75,13 +79,12 @@
 						    <span class="glyphicon glyphicon-eye-open" aria-hidden="true" style="padding-right: 24px;"></span>  Pozostałe</span>
 					      </h2>
 					</label>
-					<select ng-model="otherAction" ng-init="otherAction='0'" class="form-control minusMarginTop8">
+					<select ng-model="otherAction" ng-init="otherAction='0'" class="form-control minusMarginTop8 width100">
 					      <option class="text-warning" value="0" class="icon">Wybierz akcję</option>
-					      <option class="text-primary" value="voucher">Sprawdź numer kuponu (SP)</option>
-					      <option class="text-primary" value="voucherCount">Oblicz 15% rabat (SP)</option>
-					      <option class="text-primary" value="mail">Wyślij ponowny mail (SP)</option>
-					      <option class="text-primary" value="postalOld">Numer przesyłki - stary panel</option>
-					      <option class="text-primary" value="postalNew">Numer przesyłki - nowy panel</option>
+					      <option class="text-primary" value="voucher">Sprawdź kupon - SP</option>
+					      <option class="text-primary" value="voucherCount">Oblicz 15% rabat - SP</option>
+					      <option class="text-primary" value="mailOld">Wyślij ponowny mail - SP</option>
+					      <option class="text-primary" value="mailNew">Wyślij ponowny mail - NP</option>
 					</select>
 					<input ng-model="otherActionId" type="text" placeholder="Podaj numer zamówienia" class="form-control minusMarginTop8 centered">
 					<button ng-click="additionalAction()" class="btn btn-success minusMarginTop8">Wyszukaj</button>
@@ -92,7 +95,7 @@
 </nav>
 
 <!-- Main jumbotron for a primary marketing message or call to action -->
-    <div class="jumbotron">
+    <div ng-if="displayMain" class="jumbotron">
 	<div class="container">
 	    <p>_<br>_</p>
 	</div>
@@ -502,7 +505,8 @@
         </div>
 	
 	
-    <div class="container">
+    <div ng-if="displayMain" class="container">
+	<hr>
 	<footer>
 	  <p class="pull-right">&copy; 2016 Ad9BIS.</p>
 	</footer>

@@ -31,6 +31,7 @@
 			  <li><a href="#/products">Produkty</a></li>
 			  <li><a href="#/orders">Zamówienia</a></li>
 			  <li class="active"><a href="#/postal">Wysyłki</a></li> 
+			  <li><a href="#/logout">Wyloguj</a></li> 
 		    </ul>
 	        </div>
 	        <div ng-if="postal.current" class="col-xs-12">
@@ -47,10 +48,10 @@
 			    <input ng-model="postal.current" ng-disabled="postal.current" type="text" class="form-control marginTop18 centered">
 		      </div>
 		      <div class="col-xs-1">
-			    <button ng-click="inputAdd()" class="btn btn-success marginTop18 width100">Dodaj</button>
+			    <button ng-click="inputChange('inputAdd')" class="btn btn-success marginTop18 width100">Dodaj</button>
 		      </div>
 		      <div class="col-xs-1">
-			    <button ng-click="inputSubtract()" class="btn btn-success marginTop18 width100">Odejmij</button>
+			    <button ng-click="inputChange('inputSubtract')" class="btn btn-success marginTop18 width100">Odejmij</button>
 		      </div>
 		      <div class="col-xs-3">
 		      </div>
