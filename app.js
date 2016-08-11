@@ -1,4 +1,4 @@
-angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
+angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate', 'ngCookies'])
 
 .constant("apiUrl", "http://modele-ad9bis.pl/cms_spa/web/app_dev.php/")
 
@@ -46,18 +46,106 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 
 .service(
 	"loginService",
-	 function( $http, apiUrl ) {
-		this.login = function (email, password) {
-			return $http.get(apiUrl + 'login?email=' + email + '&password=' + password);
+	 function( $cookies, $location, $timeout, modelService ) {
+		this.logProcess = function ($scope, email, password, remember) {
+			modelService.login(email, password, remember)
+			.then(function (response) {
+				if (response.data.success === true) {
+				      if (response.data.token != false) {
+					      var expireDate = new Date();
+					      expireDate.setDate(expireDate.getDate() + 7);
+					      $cookies.put('modele-ad9bis.pl_token', response.data.token, {'expires': expireDate});
+				      }
+				      $scope.login.success = response.data.reason;
+				      $timeout(function () {
+					      window.location = '#/products';
+				      }, 2000);
+				} else {
+				      $scope.login.error = response.data.reason;
+				}
+			})
+		}
+		this.verify = function ($scope, action, origin) {
+			modelService.sessionCheck(action)
+			.then(function (response) {
+				if (response.data.success === true) {
+					if (origin === 'products') {
+						if (response.data.token != false && response.data.token != undefined) {
+							var expireDate = new Date();
+							expireDate.setDate(expireDate.getDate() + 7);
+							$cookies.remove('modele-ad9bis.pl_token');
+							$cookies.put('modele-ad9bis.pl_token', response.data.token, {'expires': expireDate});
+						}
+					} else if (origin === 'login') {
+						$location.path( "/products" );
+					}
+					$scope.displayMain = true;
+				} else {
+				        $location.path( "/login" );
+				}
+			})
+		}
+	 }
+)
+
+.service(
+	"modelService",
+	 function( $http, $cookies, apiUrl ) {
+		this.login = function (email, password, remember) {
+			return $http.get(apiUrl + 'login?email=' + email + '&password=' + password + '&remember=' + remember);
 		}
 		this.sessionCheck = function (action) {
 			if (action === 'login') {
-				return $http.get(apiUrl + 'login');
+				var token = $cookies.get('modele-ad9bis.pl_token');
+				if (token == undefined) {
+					return $http.get(apiUrl + 'login');
+				} else {
+					return $http.get(apiUrl + 'login?token=' + token);
+				}
 			} else if (action === 'logout') {
+				var token = $cookies.remove('modele-ad9bis.pl_token');
 				return $http.get(apiUrl + 'logout');
 			}
 		}
 	 }
+)
+
+.service(
+	"orderService",
+	function( $http, apiUrl ) {
+		this.evenQuantity = function ($scope) {
+			var url = apiUrl + 'orders/' + $scope.dbUrl + '/' + $scope.currentId + '/even';
+			return $http.put(url);
+		}
+		
+		this.getCustomer = function ($scope) {
+			return $http.get(apiUrl + 'orders/' + $scope.dbUrl + '/' + $scope.currentId + '?basic=true');
+		}
+		
+		this.getDiscount = function ($scope) {
+			return $http.get(apiUrl + 'orders/' + $scope.dbUrl + '/' + $scope.currentId + '?action=discount');
+		}
+		
+		this.getOrder = function ($scope) {
+			return $http.get(apiUrl + 'orders/' + $scope.dbUrl + '/' + $scope.currentId);
+		}
+		
+		this.getVoucher = function ($scope, customer) {
+			return $http.get(apiUrl + 'customer/' + $scope.dbUrl + '/' + customer + '/vouchers');
+		}
+		
+		this.sendMail = function ($scope, dbUrl, currentId, action) {
+			return $http.get(apiUrl + 'orders/' + dbUrl + '/' + currentId + '/mail?action=' + action + '&result=send');
+		} 
+		
+		this.sendDeliveryNumber = function ($scope) {
+			return $http.get(apiUrl + 'orders/' + $scope.dbUrl + '/' + $scope.currentId + '/mail?action=deliveryNumber&result=send&deliveryNumber=' + $scope.orderData.deliveryNumber);
+		}
+		
+		this.sendVoucherNumber = function ($scope) {
+			return $http.get(apiUrl + 'orders/' + $scope.dbUrl + '/' + $scope.currentId + '/mail?action=voucher&result=send&voucherNumber=' + $scope.voucherResult.lastVoucher);
+		}
+	}
 )
 
 .service(
@@ -75,7 +163,73 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	}
 )
 
-.controller('LoginController', ["$scope", '$window', '$timeout', "apiUrl", "loginService", function($scope, $window, $timeout, apiUrl, loginService) {
+.service(
+	"productsService",
+	function( $http, apiUrl ) {
+	  
+		this.deleteModified = function (id) {
+			var url = apiUrl + 'products/modified/' + id;
+			$http.delete(url, config);
+		}
+		
+		this.fullUpdate = function ($scope, data, config) {
+			var url = apiUrl + 'products/' + $scope.fullEdition.id + '/' + $scope.fullEdition.attribute.new + '/' + $scope.fullEdition.attribute.old;
+			return $http.put(url, data, config);
+		}
+	  
+		this.getCategories = function () {
+			return $http.get(apiUrl + 'categories');
+		}
+		
+		this.getConditions = function () {
+			return $http.get(apiUrl + 'products/conditions');
+		}
+		
+		this.getFullEdition = function ($scope) {
+			var currentUrl = apiUrl + 'products/' + $scope.productId;
+			return $http.get(currentUrl)
+		}
+		
+		this.getHistory = function ($routeParams) {
+			return $http.get(apiUrl + 'products/' + $routeParams.historyId + '/history');
+		}
+	      
+		this.getManufacturers = function () {
+			return $http.get(apiUrl + 'manufacturers');
+		}
+      
+		this.getModified = function () {
+			return $http.get(apiUrl + 'products/modified');
+		}
+		
+		this.getName = function (basicName, manufacturerSelect, categorySelect) {
+			return $http.get(apiUrl + 'products?search=' + basicName + '&manufacturer=' + manufacturerSelect + '&category=' + categorySelect);
+		}
+		
+		this.getProduct = function ($scope) {
+			if ($scope.data.singleSelect != null) {
+				var currentUrl = apiUrl + 'products/' + $scope.checkId + '/' + $scope.data.singleSelect + '?basic=true';
+			} else {
+				var currentUrl = apiUrl + 'products/' + $scope.checkId + '?basic=true';
+			}
+			return $http.get(currentUrl);
+		}
+		
+		this.updateData = function ($scope, db, data, config) {
+			if (db == 'both') {
+				  var url = apiUrl + 'products/' + $scope.basicId.id + '/' + $scope.basicId.attribute.new + '/' + $scope.basicId.attribute.old;
+			} else if (db == 'linuxPl') {
+				  var url = apiUrl + 'products/' + $scope.basicId.id + '/' + $scope.basicId.attribute.new;
+			} else if (db == 'ogicom') {
+				  var url = apiUrl + 'products/' + $scope.basicId.id + '/' + $scope.basicId.attribute.old;
+			}
+			return $http.put(url, data, config);
+		}
+		
+	}
+)
+
+.controller('LoginController', ["$scope", '$window', "loginService", function($scope, $window, loginService) {
   
 	$scope.login = [];
 	
@@ -86,157 +240,23 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 		var action = 'logout';
 	}
   
-	loginService.sessionCheck(action)
-	.then(function (response) {
-		if (response.data.success === true) {
-			window.location = '#/products';
-		} else {
-			window.location = '#/login';
-		}
-	})
+	loginService.verify($scope, action, 'login');
 	
 	$scope.loginAction = function() {
 	        var email = $scope.login.email;
 	        var password = $scope.login.password;
-	        loginService.login(email, password)
-	        .then(function (response) {
-			if (response.data.success === true) {
-			      $scope.login.success = response.data.reason;
-			      $timeout(function () {
-				      window.location = '#/products';
-			      }, 2000);
-			} else {
-			      $scope.login.error = response.data.reason;
-			}
-	        })
+		var remember = $scope.login.remember;
+		if (remember === undefined || remember === false) {
+		      remember = 0;
+		} else {
+		      remember = 1;
+		}
+	        loginService.logProcess($scope, email, password, remember);
 	}
   
 }])
 
-.controller('PostalController', ["$scope", "loginService", "postalService", function($scope, loginService, postalService) {
-  
-	$scope.noPostal = null;
-	$scope.postal = [];
-	$scope.postal.inputAdd = undefined;
-	$scope.postal.inputSubtract = undefined;
-	$scope.postalError = undefined;
-	$scope.postalMessage = undefined;
-	
-	function handleError ( response ) {
-		if (! angular.isObject( response.data ) || response.data.success != true) {
-			$scope.postalError = response.data.reason;
-			return false;
-		}
-	}
-			
-	function handleSuccess ( response ) {
-		return( response.data );
-	}
-  
-	/*
-	function getPostal() {
-	      $http.get(apiUrl + 'postal')
-	      .then(function(response){
-		      if (response.data.success === true) {
-			      $scope.postal = response.data;
-			      $scope.postal.current = $scope.postal.current + ' zł';
-		      } else {
-			      $scope.postalerror = response.data.reason;
-		      }
-	      })
-	}
-	*/
-	
-	function getPostal() {
-		postalService.getPostal()
-		.then(function (response) {
-			  handleError( response );
-			  var result = handleSuccess( response ); 
-			  $scope.postal = result;
-			  $scope.postal.current = $scope.postal.current + ' zł';
-		})
-	}
-	
-	loginService.sessionCheck('login')
-	.then(function (response) {
-		if (response.data.success === true) {
-			getPostal();
-		} else {
-			window.location = '#/login';
-		}
-	})
-	
-	$scope.inputChange = function(inputName) {
-		if (inputName === 'inputAdd') {
-			var secondName = 'inputSubtract';
-		} else {
-			var secondName = 'inputAdd';
-		}
-		if ($scope.postal[secondName] == true) {
-		      $scope.postal[secondName] = undefined;
-		}
-		if ($scope.postal[inputName] == undefined) {
-			$scope.postal[inputName] = true;
-		} else {
-		        $scope.postal[inputName] = undefined;
-		}	
-	}
-	
-	/*
-	$scope.postalChange = function(action) {
-		var amount = $scope.postal[action];
-		if (amount == undefined || isNaN(amount) == true) {
-		      $scope.postalerror = 'To chyba nie jest numer...';
-		      return false;
-		}
-		$scope.postalerror = undefined;
-		$scope.postalmessage = undefined;
-		var url = apiUrl + 'postal';
-		var data = $.param({
-		      action: action,
-		      amount: amount
-	        });
-		$http({
-		    method: 'POST',
-		    url: url,
-		    data: data,
-		    headers: {'Content-Type': 'application/x-www-form-urlencoded'}
-		})
-		.then(function (response) {
-			if (response.data.success == false) {
-				$scope.postalerror = response.data.reason;
-			} else {
-				$scope.postalmessage = response.data.reason;
-				$scope.postal.inputAdd = undefined;
-				$scope.postal.inputSubtract = undefined;
-				getPostal();
-			}
-		})
-	}
-	*/
-	
-	$scope.postalChange = function(action) {
-		var amount = $scope.postal[action];
-		if (amount == '' || isNaN(amount) == true) {
-			$scope.postalError = 'To chyba nie jest numer...';
-			return false;
-		}
-		$scope.postalError = undefined;
-		$scope.postalMessage = undefined;
-		postalService.insertPostal(action, amount)
-		.then(function(response) {
-			var result = handleError( response );
-			var result = handleSuccess( response );
-			$scope.postalMessage = result.reason;
-			$scope.postal.inputAdd = undefined;
-			$scope.postal.inputSubtract = undefined;
-			getPostal();
-		})
-	}
-	
-}])
-
-.controller('OrderController', ["$scope", "$http", "apiUrl", '$routeParams', '$window', 'loginService', function($scope, $http, apiUrl, $routeParams, $window, loginService) {
+.controller('OrderController', ["$scope", '$routeParams', '$window', 'loginService', 'orderService', function($scope, $routeParams, $window, loginService, orderService) {
   
 	$scope.dbUrl = null;
 	$scope.deliveryNumber = null;
@@ -266,8 +286,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 				}
 				if ($routeParams.command != undefined && $routeParams.command != 'mail') {
 					if ($routeParams.command == 'even') {
-						var url = apiUrl + 'orders/' + $scope.dbUrl + '/' + $scope.currentId + '/even';
-						$http.put(url)
+						orderService.evenQuantity($scope)
 						.then(function (response) {
 							$scope.orderUpdate = response.data;
 							if ($scope.orderUpdate.success == false) {
@@ -282,7 +301,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 							$scope.noOrder = '15% rabat jest stosowany wyłącznie na starym sklepie!';
 							return false;
 						}
-						$http.get(apiUrl + 'orders/' + $scope.dbUrl + '/' + $scope.currentId + '?action=discount')
+						orderService.getDiscount($scope)
 						.then(function(response){
 						      $scope.discount = response.data;
 						      if ($scope.discount.success == false) { 
@@ -296,13 +315,13 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 							$scope.noOrder = 'Kupony rabatowy przyznawane są wyłącznie na starym sklepie!';
 							return false;
 						}
-						$http.get(apiUrl + 'orders/' + $scope.dbUrl + '/' + $scope.currentId + '?basic=true')
+						orderService.getCustomer($scope)
 						.then(function(response){
 						      var customer = response.data.customer.id;
 						      if (isNaN(customer) == true) {
 							    $scope.noOrder = 'Błąd przy pobieraniu informacji o kliencie!';
 						      }
-						      $http.get(apiUrl + 'customer/' + $scope.dbUrl + '/' + customer + '/vouchers')
+						      orderService.getVoucher($scope, customer)
 						      .then(function(response){
 							      $scope.voucherResult = response.data;
 						      })
@@ -311,7 +330,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 						$scope.noOrder = 'Podano niewłaściwą komendę!';
 					}
 				} else {
-					$http.get(apiUrl + 'orders/' + $scope.dbUrl + '/' + $scope.currentId)
+					orderService.getOrder($scope)
 					.then(function(response){
 						$scope.orderData = response.data;
 						if ($scope.orderData.success == false) {
@@ -336,23 +355,19 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 			}
 		}
 	}
+
+	loginService.verify($scope, 'login', 'orders');
 	
-	loginService.sessionCheck('login')
-	.then(function (response) {
-		if (response.data.success === true) {
-			$scope.displayMain = true;
-			idCheck($scope, $routeParams);
-		} else {
-			window.location = '#/login';
-		}
-	})
+	idCheck($scope, $routeParams);
 	
 	$scope.additionalAction = function() {
+	      $scope.otherActionId = this.otherActionId;
+	      $scope.otherAction = this.otherAction;
 	      if (isNaN($scope.otherActionId) == true) {
 		    $scope.noOrder = $scope.otherActionId +'...? To ma być numer?';
 		    return false;
 	      }
-	      if (($scope.otherAction == 0) || ($scope.otherActionId == null) || ($scope.otherActionId == 0)) {
+	      if (($scope.otherAction == 0) || ($scope.otherActionId == null)) {
 		    return false;
 	      } else if ($scope.otherAction == 'voucher') {
 		      window.location = '#/orders/old/' + $scope.otherActionId + '/voucher';
@@ -366,7 +381,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	}
 	
 	$scope.mail = function(currentId, dbUrl, action) {
-	        $http.get(apiUrl + 'orders/' + dbUrl + '/' + currentId + '/mail?action=' + action + '&result=send')
+	        orderService.sendMail($scope, dbUrl, currentId, action)
 		.then(function(response){
 		        if (response.data.success === true) {
 			      $scope.email = response.data.reason;
@@ -377,13 +392,12 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	}
 	
 	$scope.mailSendDeliveryNumber = function() {
-	  alert($scope.orderData.deliveryNumber);
 	       if ($scope.orderData.deliveryNumber == '' || $scope.orderData.deliveryNumber == '(00)') {
 		      $scope.noOrder = 'Wprowadź numer przesyłki!';
 		      return false;
 	       } else {
 		      $scope.noOrder = undefined;
-		      $http.get(apiUrl + 'orders/' + $scope.dbUrl + '/' + $scope.currentId + '/mail?action=deliveryNumber&result=send&deliveryNumber=' + $scope.orderData.deliveryNumber)
+		      orderService.sendDeliveryNumber($scope)
 		      .then(function(response){
 			      if (response.data.success === true) {
 				    $scope.email = response.data.reason;
@@ -413,7 +427,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 			$scope.noOrder = undefined;
 			window.open("http://modele-ad9bis.pl/cms_spa/web/app_dev.php/orders/" + $scope.dbUrl + "/" + $scope.currentId + "/mail?action=voucher&result=display&voucherNumber=" + $scope.voucherResult.lastVoucher);
 			} else if (action == 'send') {
-			      $http.get(apiUrl + 'orders/' + $scope.dbUrl + '/' + $scope.currentId + '/mail?action=voucher&result=send&voucherNumber=' + $scope.voucherResult.lastVoucher)
+			      orderService.sendVoucherNumber($scope)
 			      .then(function(response){
 				      if (response.data.success === true) {
 					    $scope.email = response.data.reason;
@@ -426,18 +440,92 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	}
 	
 	$scope.orderSearch = function() {
+	      $scope.orderId = this.orderId;
+	      $scope.orderDb = this.orderDb;
 	      if ($scope.orderDb == 0 || $scope.orderId == undefined) {
 		    return false;
 	      }
 	      if (isNaN($scope.orderId) == true) {
 		     $scope.noOrder = '"' + $scope.orderId + '"...? To ma być numer?';
 		     delete $scope.orderId;
+		     return false;
 	      }
 	      window.location = '#/orders/' + $scope.orderDb + '/' + $scope.orderId;
 	}
 }])
 
-.controller("ProductController", ["$scope", "$http", "apiUrl", '$routeParams', '$filter', '$window', 'loginService', function($scope, $http, apiUrl, $routeParams, $filter, $window, loginService){
+.controller('PostalController', ["$scope", "loginService", "postalService", function($scope, loginService, postalService) {
+  
+	$scope.noPostal = null;
+	$scope.postal = [];
+	$scope.postal.inputAdd = undefined;
+	$scope.postal.inputSubtract = undefined;
+	$scope.postalError = undefined;
+	$scope.postalMessage = undefined;
+	
+	function handleError ( response ) {
+		if (! angular.isObject( response.data ) || response.data.success != true) {
+			$scope.postalError = response.data.reason;
+			return false;
+		}
+	}
+			
+	function handleSuccess ( response ) {
+		return( response.data );
+	}
+	
+	function getPostal() {
+		postalService.getPostal()
+		.then(function (response) {
+			  handleError( response );
+			  var result = handleSuccess( response ); 
+			  $scope.postal = result;
+			  $scope.postal.current = $scope.postal.current + ' zł';
+		})
+	}
+	
+	loginService.verify($scope, 'login', 'postal');
+	
+	getPostal();
+	
+	$scope.inputChange = function(inputName) {
+		if (inputName === 'inputAdd') {
+			var secondName = 'inputSubtract';
+		} else {
+			var secondName = 'inputAdd';
+		}
+		if ($scope.postal[secondName] == true) {
+		      $scope.postal[secondName] = undefined;
+		}
+		if ($scope.postal[inputName] == undefined) {
+			$scope.postal[inputName] = true;
+		} else {
+		        $scope.postal[inputName] = undefined;
+		}	
+	}
+	
+	$scope.postalChange = function(action) {
+		var amount = $scope.postal[action];
+		if (amount == '' || isNaN(amount) == true) {
+			$scope.postalError = 'To chyba nie jest numer...';
+			return false;
+		}
+		$scope.postalError = undefined;
+		$scope.postalMessage = undefined;
+		postalService.insertPostal(action, amount)
+		.then(function(response) {
+			var result = handleError( response );
+			var result = handleSuccess( response );
+			$scope.postalMessage = result.reason;
+			$scope.postal.inputAdd = undefined;
+			$scope.postal.inputSubtract = undefined;
+			getPostal();
+		})
+	}
+	
+}])
+
+.controller("ProductController", ["$scope", '$routeParams', '$filter', '$window', '$cookies', '$location', 'loginService', 'productsService',  function($scope, $routeParams, $filter, $window, $cookies, $location, loginService, productsService){
   
 	var config = 'contenttype';
 	$scope.basicUpdate = [];
@@ -454,6 +542,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	      searchResult: null,
 	      searchResultLength: null,
 	};
+	//$scope.displayMain = false;
 	$scope.fullEdition = [];
 	$scope.fullEdition.active = undefined;
 	$scope.fullEdition.condition = undefined;
@@ -467,24 +556,18 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	$scope.names = null;
 	$scope.progress={'cursor':'wait'};
 	
-	$http.get(apiUrl + 'categories')
+	productsService.getCategories()
 	      .then(function(response){
 		      $scope.categories = response.data;
 	      }) 
 	      
-	$http.get(apiUrl + 'manufacturers')
+	productsService.getManufacturers()
 	      .then(function(response){
 		      $scope.manufactorers = response.data;
-	      })
-	
-	//$http.get(apiUrl + 'products/conditions')
-	//      .then(function(response){
-	//	      $scope.data.activity = response.data.productActivity;
-	//	      $scope.data.conditions = response.data.productConditions;
-	//      })         	
+	      })        	
 	
 	function checkModified(deleteSuccess) {
-	      $http.get(apiUrl + 'products/modified')
+	      productsService.getModified($scope)
 	      .then(function(response){
 		      if (!$routeParams.id) {
 			  $scope.data.modified = response.data;
@@ -494,6 +577,42 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 		      }
 	      }) 
 	}
+	
+	function checkIdBasic(repeat) {
+	      if (($scope.checkId == undefined) || ( isNaN($scope.checkId) == true)) {
+		  delete $scope.checkId;
+		  return false;
+	      }
+	      delete $scope.basicName;
+	      delete $scope.history;
+	      delete $scope.productDetail;
+	      if(repeat != 'true') {
+		  delete $scope.basicUpdate.message;
+		  delete $scope.basicQuantityChange;
+		  delete $scope.basicPriceChange;
+	      }
+	      productsService.getProduct($scope)
+	      .then(function(response){
+		  if(response.data.success == false) {
+			if (response.data.reason == 'no product') {
+			      $scope.noProduct = 'Brak produktu o ID: ' + $scope.checkId;
+			      delete $scope.checkId;
+			}
+			$scope.attributeSelect = response.data.dataNew;
+			delete $scope.basicId;
+		  } else {
+			delete $scope.noProduct;
+			delete $scope.nameAdditionalConditions;
+			delete $scope.names;
+			delete $scope.attributeSelect;
+			$scope.data.singleSelect = null;
+			$scope.basicId = response.data;
+			$scope.basicId.imageUrl =
+			'http://modele-ad9bis.pl/img/p/' + $scope.basicId.id + '-' + $scope.basicId.image + '-thickbox.jpg';
+			$scope.basicId.imageUrlMain = 'http://modele-ad9bis.pl/img/p/' + $scope.basicId.id + '-' + $scope.basicId.image + '.jpg';
+		  }
+	      })
+	}
   
 	function idCheck($scope, $routeParams) {
 	      var currentId = $routeParams.id;
@@ -502,12 +621,11 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 		    if (isNaN($scope.productId) == true) {
 			  window.location = '#/products';
 		    }
-		    $http.get(apiUrl + 'products/conditions')
+		    productsService.getConditions()
 		    .then(function(response){
 			    $scope.data.activity = response.data.productActivity;
 			    $scope.data.conditions = response.data.productConditions;
-			    var currentUrl = apiUrl + 'products/' + $scope.productId;
-			    $http.get(currentUrl)
+			    productsService.getFullEdition($scope)
 			    .then(function(response){
 				  $scope.fullEdition = response.data;
 				  if ($scope.fullEdition.success == false) {
@@ -548,7 +666,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 		    $scope.disabled = true;
 		    $scope.progress = undefined;
 	      } else if ($routeParams.historyId != undefined) {
-		    $http.get(apiUrl + 'products/' + $routeParams.historyId + '/history')
+		    productsService.getHistory($routeParams)
 		    .then(function(response){
 			      $scope.disabled = true;
 			      delete $scope.data.modified;
@@ -565,58 +683,9 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	      }
 	}
 	
-	function checkIdBasic(repeat) {
-	      if (($scope.checkId == undefined) || ( isNaN($scope.checkId) == true)) {
-		  delete $scope.checkId;
-		  return false;
-	      }
-	      delete $scope.basicName;
-	      delete $scope.history;
-	      delete $scope.productDetail;
-	      if(repeat != 'true') {
-		  delete $scope.basicUpdate.message;
-		  delete $scope.basicQuantityChange;
-		  delete $scope.basicPriceChange;
-	      }
-	      if ($scope.data.singleSelect != null) {
-		  var currentUrl = apiUrl + 'products/' + $scope.checkId + '/' + $scope.data.singleSelect + '?basic=true';
-	      } else {
-		  var currentUrl = apiUrl + 'products/' + $scope.checkId + '?basic=true';
-	      }
-	      $http.get(currentUrl)
-	      .then(function(response){
-		  if(response.data.success == false) {
-			if (response.data.reason == 'no product') {
-			      $scope.noProduct = 'Brak produktu o ID: ' + $scope.checkId;
-			      delete $scope.checkId;
-			}
-			$scope.attributeSelect = response.data.dataNew;
-			delete $scope.basicId;
-		  } else {
-			delete $scope.noProduct;
-			delete $scope.nameAdditionalConditions;
-			delete $scope.names;
-			delete $scope.attributeSelect;
-			$scope.data.singleSelect = null;
-			$scope.basicId = response.data;
-			$scope.basicId.imageUrl =
-			'http://modele-ad9bis.pl/img/p/' + $scope.basicId.id + '-' + $scope.basicId.image + '-thickbox.jpg';
-			$scope.basicId.imageUrlMain = 'http://modele-ad9bis.pl/img/p/' + $scope.basicId.id + '-' + $scope.basicId.image + '.jpg';
-		  }
-	      })
-	}
-	
 	function updateData(db, data, success) {
-	    if (db == 'both') {
-		  var url = apiUrl + 'products/' + $scope.basicId.id + '/' + $scope.basicId.attribute.new + '/' + $scope.basicId.attribute.old;
-	    } else if (db == 'linuxPl') {
-		  var url = apiUrl + 'products/' + $scope.basicId.id + '/' + $scope.basicId.attribute.new;
-	    } else if (db == 'ogicom') {
-		  var url = apiUrl + 'products/' + $scope.basicId.id + '/' + $scope.basicId.attribute.old;
-	    }
-
-            $http.put(url, data, config)
-            .then(function (response) {
+		productsService.updateData($scope, db, data, config)
+		.then(function (response) {
                 $scope.basicUpdate = response.data;
 		if ($scope.basicUpdate.success == true) {	
 		      $scope.basicUpdate.message = success;
@@ -624,23 +693,18 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 		}
             })
 	};
+
+	loginService.verify($scope, 'login', 'products');
 	
-	loginService.sessionCheck('login')
-	.then(function (response) {
-		if (response.data.success === true) {
-			$scope.displayMain = true;
-			idCheck($scope, $routeParams);
-		} else {
-			window.location = '#/login';
-		}
-	})
+	idCheck($scope, $routeParams);
 	
 	$scope.checkIdBasic = function () {
-	      checkIdBasic();
+		$scope.checkId = this.checkId;
+	        checkIdBasic();
 	};
 	
 	$scope.checkName = function () {
-	      if ($scope.basicName.length < 3) {
+	      if (this.basicName.length < 3) {
 		    delete $scope.noProduct;
 		    $scope.data.searchResult = null;
 		    $scope.data.searchResultLength = null;
@@ -653,17 +717,18 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	      if ($scope.data.categorySelect == null) {
 		  $scope.data.categorySelect = 0;
 	      }
+	      var basicName = this.basicName;
 	      delete $scope.checkId;
 	      delete $scope.basicId;
-	      $http.get(apiUrl + 'products?search=' + $scope.basicName + '&manufacturer=' + $scope.data.manufacturerSelect + '&category=' + $scope.data.categorySelect)
+	      productsService.getName(this.basicName, this.data.manufacturerSelect, this.data.categorySelect)
 	      .then(function(response){
 		      if(response.data.success == false) {
-			  $scope.noProduct = 'Brak produktu o nazwie: ' + $scope.basicName;
+			  $scope.noProduct = 'Brak produktu o nazwie: ' + basicName;
 			  $scope.names = null;
 			  $scope.data.searchResultLength = null;
 		      } else {
 		          delete $scope.noProduct;
-			  $scope.data.searchResult = 'Wyniki wyszukiwania dla frazy: "' + $scope.basicName + '". ';
+			  $scope.data.searchResult = 'Wyniki wyszukiwania dla frazy: "' + basicName + '". ';
 			  if (response.data.length == 1) {
 				var lengthFinish = ' produkt.';
 			  } else if (response.data.length == 2 || response.data.length == 3 || response.data.length == 4) {
@@ -711,8 +776,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	};
 	
 	$scope.deleteModified = function (id) {
-		var url = apiUrl + 'products/modified/' + id;
-		$http.delete(url, config)
+		productsService.deleteModified(id)
 		.then(function(response){
 		      $scope.data.modifiedDelete = response.data;
 		      if ($scope.data.modifiedDelete.success == true) {
@@ -721,6 +785,11 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 			      $scope.data.modifiedDelete.error = true;
 		      }
 		})  
+	}
+	
+	$scope.deleteProducts = function () {
+	      delete $scope.basicId;
+	      $location.path( "/products" );
 	}
 	
 	$scope.displayCategories = function () {
@@ -740,6 +809,10 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 	      } else {
 		    delete $scope.displayPhoto;
 	      }
+	}
+	
+	$scope.editionProduct = function (id) {
+		$location.path( "/products/" + id );
 	}
 	
 	$scope.fullUpdate = function () {
@@ -765,8 +838,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 		deletePhoto: $scope.fullEdition.deletePhoto,
 		modified: $scope.fullEdition.modified
               });
-	      var url = apiUrl + 'products/' + $scope.fullEdition.id + '/' + $scope.fullEdition.attribute.new + '/' + $scope.fullEdition.attribute.old;
-	      $http.put(url, data, config)
+	      productsService.fullUpdate($scope, data, config)
 	      .then(function (response) {
 		    $scope.fullUpdate = response.data;
 		    if ($scope.fullUpdate === 'true') {
@@ -774,6 +846,10 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate'])
 			$scope.categoryList={'background-color':'#eee', 'cursor':'not-allowed'}
 		    }
               })
+	}
+	
+	$scope.historyProduct = function (id) {
+	      $location.path( "/products/" + id + "/history" );
 	}
 	
         $scope.multiplyDesc = function () {
