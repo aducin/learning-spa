@@ -148,15 +148,32 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate', 'ngCookies'])
 		}
 		
 		this.sendMail = function ($scope, dbUrl, currentId, action) {
-			return $http.get(apiUrl + 'orders/' + dbUrl + '/' + currentId + '/mail?action=' + action + '&result=send');
+			return $http.get(apiUrl + 'orders/' + dbUrl + '/' + currentId + '/mail', {
+				params: {
+					action: action,
+					result: 'send'
+				}
+			})
 		} 
 		
 		this.sendDeliveryNumber = function ($scope) {
-			return $http.get(apiUrl + 'orders/' + $scope.dbUrl + '/' + $scope.currentId + '/mail?action=deliveryNumber&result=send&deliveryNumber=' + $scope.orderData.deliveryNumber);
+			return $http.get(apiUrl + 'orders/' + $scope.dbUrl + '/' + $scope.currentId + '/mail', {
+				params: {
+					action: 'deliveryNumber',
+					result: 'send',
+					deliveryNumber: $scope.orderData.deliveryNumber
+				}
+			})
 		}
 		
 		this.sendVoucherNumber = function ($scope) {
-			return $http.get(apiUrl + 'orders/' + $scope.dbUrl + '/' + $scope.currentId + '/mail?action=voucher&result=send&voucherNumber=' + $scope.voucherResult.lastVoucher);
+			return $http.get(apiUrl + 'orders/' + $scope.dbUrl + '/' + $scope.currentId + '/mail', {
+				params: {
+					action: 'voucher',
+					result: 'send',
+					voucherNumber: $scope.voucherResult.lastVoucher
+				}
+			})
 		}
 	}
 )
@@ -216,7 +233,13 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate', 'ngCookies'])
 		}
 		
 		this.getName = function (basicName, manufacturerSelect, categorySelect) {
-			return $http.get(apiUrl + 'products?search=' + basicName + '&manufacturer=' + manufacturerSelect + '&category=' + categorySelect);
+			return $http.get(apiUrl + 'products', {
+				params: {
+					search: basicName,
+					manufacturer: manufacturerSelect,
+					category: categorySelect
+				}
+			})
 		}
 		
 		this.getProduct = function ($scope) {
