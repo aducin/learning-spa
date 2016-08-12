@@ -66,7 +66,12 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate', 'ngCookies'])
 			})
 		}
 		this.verify = function ($scope, action, origin) {
-			modelService.sessionCheck(action)
+			if (action === 'login') {
+				var token = $cookies.get('modele-ad9bis.pl_token');
+			} else if (action === 'logout') {
+				$cookies.remove('modele-ad9bis.pl_token');
+			}
+			modelService.sessionCheck(action, token)
 			.then(function (response) {
 				if (response.data.success === true) {
 					if (origin === 'products') {
@@ -90,7 +95,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate', 'ngCookies'])
 
 .service(
 	"modelService",
-	 function( $http, $cookies, apiUrl ) {
+	 function( $http, apiUrl ) {
 		this.login = function (email, password, remember) {
 			return $http.get(apiUrl + 'login', {
 			    params: {
@@ -100,9 +105,8 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate', 'ngCookies'])
 			    }
 			})
 		}
-		this.sessionCheck = function (action) {
+		this.sessionCheck = function (action, token) {
 			if (action === 'login') {
-				var token = $cookies.get('modele-ad9bis.pl_token');
 				if (token == undefined) {
 					return $http.get(apiUrl + 'login');
 				} else {
@@ -113,7 +117,6 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate', 'ngCookies'])
 					})
 				}
 			} else if (action === 'logout') {
-				var token = $cookies.remove('modele-ad9bis.pl_token');
 				return $http.get(apiUrl + 'logout');
 			}
 		}
@@ -121,7 +124,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate', 'ngCookies'])
 )
 
 .service(
-	"orderService",
+	"orderModel",
 	function( $http, apiUrl ) {
 		this.evenQuantity = function ($scope) {
 			var url = apiUrl + 'orders/' + $scope.dbUrl + '/' + $scope.currentId + '/even';
@@ -159,7 +162,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate', 'ngCookies'])
 )
 
 .service(
-	"postalService",
+	"postalModel",
 	function( $http, apiUrl ) {	      
 		this.getPostal = function () {
 			return $http.get(apiUrl + 'postal');
@@ -266,7 +269,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate', 'ngCookies'])
   
 }])
 
-.controller('OrderController', ["$scope", '$routeParams', '$window', 'loginService', 'orderService', function($scope, $routeParams, $window, loginService, orderService) {
+.controller('OrderController', ["$scope", '$routeParams', '$window', 'loginService', 'orderModel', function($scope, $routeParams, $window, loginService, orderModel) {
   
 	$scope.dbUrl = null;
 	$scope.deliveryNumber = null;
@@ -296,7 +299,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate', 'ngCookies'])
 				}
 				if ($routeParams.command != undefined && $routeParams.command != 'mail') {
 					if ($routeParams.command == 'even') {
-						orderService.evenQuantity($scope)
+						orderModel.evenQuantity($scope)
 						.then(function (response) {
 							$scope.orderUpdate = response.data;
 							if ($scope.orderUpdate.success == false) {
@@ -311,7 +314,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate', 'ngCookies'])
 							$scope.noOrder = '15% rabat jest stosowany wyłącznie na starym sklepie!';
 							return false;
 						}
-						orderService.getDiscount($scope)
+						orderModel.getDiscount($scope)
 						.then(function(response){
 						      $scope.discount = response.data;
 						      if ($scope.discount.success == false) { 
@@ -325,13 +328,13 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate', 'ngCookies'])
 							$scope.noOrder = 'Kupony rabatowy przyznawane są wyłącznie na starym sklepie!';
 							return false;
 						}
-						orderService.getCustomer($scope)
+						orderModel.getCustomer($scope)
 						.then(function(response){
 						      var customer = response.data.customer.id;
 						      if (isNaN(customer) == true) {
 							    $scope.noOrder = 'Błąd przy pobieraniu informacji o kliencie!';
 						      }
-						      orderService.getVoucher($scope, customer)
+						      orderModel.getVoucher($scope, customer)
 						      .then(function(response){
 							      $scope.voucherResult = response.data;
 						      })
@@ -340,7 +343,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate', 'ngCookies'])
 						$scope.noOrder = 'Podano niewłaściwą komendę!';
 					}
 				} else {
-					orderService.getOrder($scope)
+					orderModel.getOrder($scope)
 					.then(function(response){
 						$scope.orderData = response.data;
 						if ($scope.orderData.success == false) {
@@ -391,7 +394,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate', 'ngCookies'])
 	}
 	
 	$scope.mail = function(currentId, dbUrl, action) {
-	        orderService.sendMail($scope, dbUrl, currentId, action)
+	        orderModel.sendMail($scope, dbUrl, currentId, action)
 		.then(function(response){
 		        if (response.data.success === true) {
 			      $scope.email = response.data.reason;
@@ -407,7 +410,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate', 'ngCookies'])
 		      return false;
 	       } else {
 		      $scope.noOrder = undefined;
-		      orderService.sendDeliveryNumber($scope)
+		      orderModel.sendDeliveryNumber($scope)
 		      .then(function(response){
 			      if (response.data.success === true) {
 				    $scope.email = response.data.reason;
@@ -437,7 +440,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate', 'ngCookies'])
 			$scope.noOrder = undefined;
 			window.open("http://modele-ad9bis.pl/cms_spa/web/app_dev.php/orders/" + $scope.dbUrl + "/" + $scope.currentId + "/mail?action=voucher&result=display&voucherNumber=" + $scope.voucherResult.lastVoucher);
 			} else if (action == 'send') {
-			      orderService.sendVoucherNumber($scope)
+			      orderModel.sendVoucherNumber($scope)
 			      .then(function(response){
 				      if (response.data.success === true) {
 					    $scope.email = response.data.reason;
@@ -464,7 +467,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate', 'ngCookies'])
 	}
 }])
 
-.controller('PostalController', ["$scope", "loginService", "postalService", function($scope, loginService, postalService) {
+.controller('PostalController', ["$scope", "loginService", "postalModel", function($scope, loginService, postalModel) {
   
 	$scope.noPostal = null;
 	$scope.postal = [];
@@ -485,7 +488,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate', 'ngCookies'])
 	}
 	
 	function getPostal() {
-		postalService.getPostal()
+		postalModel.getPostal()
 		.then(function (response) {
 			  handleError( response );
 			  var result = handleSuccess( response ); 
@@ -522,7 +525,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate', 'ngCookies'])
 		}
 		$scope.postalError = undefined;
 		$scope.postalMessage = undefined;
-		postalService.insertPostal(action, amount)
+		postalModel.insertPostal(action, amount)
 		.then(function(response) {
 			var result = handleError( response );
 			var result = handleSuccess( response );
