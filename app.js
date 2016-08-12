@@ -92,7 +92,13 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate', 'ngCookies'])
 	"modelService",
 	 function( $http, $cookies, apiUrl ) {
 		this.login = function (email, password, remember) {
-			return $http.get(apiUrl + 'login?email=' + email + '&password=' + password + '&remember=' + remember);
+			return $http.get(apiUrl + 'login', {
+			    params: {
+				email: email,
+				password: password,
+				remember: remember
+			    }
+			})
 		}
 		this.sessionCheck = function (action) {
 			if (action === 'login') {
@@ -100,7 +106,11 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate', 'ngCookies'])
 				if (token == undefined) {
 					return $http.get(apiUrl + 'login');
 				} else {
-					return $http.get(apiUrl + 'login?token=' + token);
+					return $http.get(apiUrl + 'login', {
+					      params: {
+						    token: token
+					      }
+					})
 				}
 			} else if (action === 'logout') {
 				var token = $cookies.remove('modele-ad9bis.pl_token');
@@ -164,7 +174,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate', 'ngCookies'])
 )
 
 .service(
-	"productsService",
+	"productsModel",
 	function( $http, apiUrl ) {
 	  
 		this.deleteModified = function (id) {
@@ -525,7 +535,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate', 'ngCookies'])
 	
 }])
 
-.controller("ProductController", ["$scope", '$routeParams', '$filter', '$window', '$cookies', '$location', 'loginService', 'productsService',  function($scope, $routeParams, $filter, $window, $cookies, $location, loginService, productsService){
+.controller("ProductController", ["$scope", '$routeParams', '$filter', '$window', '$cookies', '$location', '$q', 'loginService', 'productsModel',  function($scope, $routeParams, $filter, $window, $cookies, $location, $q, loginService, productsModel){
   
 	var config = 'contenttype';
 	$scope.basicUpdate = [];
@@ -556,18 +566,16 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate', 'ngCookies'])
 	$scope.names = null;
 	$scope.progress={'cursor':'wait'};
 	
-	productsService.getCategories()
-	      .then(function(response){
-		      $scope.categories = response.data;
-	      }) 
-	      
-	productsService.getManufacturers()
-	      .then(function(response){
-		      $scope.manufactorers = response.data;
-	      })        	
+	
+	function categories() {
+	        productsModel.getCategories()
+		.then(function(response){
+			  $scope.categories = response.data;
+		}) 
+	}
 	
 	function checkModified(deleteSuccess) {
-	      productsService.getModified($scope)
+	      productsModel.getModified($scope)
 	      .then(function(response){
 		      if (!$routeParams.id) {
 			  $scope.data.modified = response.data;
@@ -591,7 +599,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate', 'ngCookies'])
 		  delete $scope.basicQuantityChange;
 		  delete $scope.basicPriceChange;
 	      }
-	      productsService.getProduct($scope)
+	      productsModel.getProduct($scope)
 	      .then(function(response){
 		  if(response.data.success == false) {
 			if (response.data.reason == 'no product') {
@@ -621,52 +629,58 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate', 'ngCookies'])
 		    if (isNaN($scope.productId) == true) {
 			  window.location = '#/products';
 		    }
-		    productsService.getConditions()
-		    .then(function(response){
-			    $scope.data.activity = response.data.productActivity;
-			    $scope.data.conditions = response.data.productConditions;
-			    productsService.getFullEdition($scope)
-			    .then(function(response){
-				  $scope.fullEdition = response.data;
-				  if ($scope.fullEdition.success == false) {
-					window.location = '#/products';
-				  }
-				  $scope.fullEdition.descriptionOriginal = $scope.fullEdition.description;
-				  var currentTag = '';
-				  for (var i = 0; i < $scope.fullEdition.productTags.length; i++) {
+		    var categories = productsModel.getCategories();
+		    var conditions = productsModel.getConditions();
+		    var fullEdition = productsModel.getFullEdition($scope);
+		    var manufacturers = productsModel.getManufacturers();
+		    $q.all([
+				categories,
+				conditions,
+				fullEdition,
+				manufacturers
+		    ]).then(function(result){
+			    $scope.data.activity = result[1].data.productActivity;
+			    $scope.data.conditions = result[1].data.productConditions;
+			    if (result[2].data.success == false) {
+				    window.location = '#/products';
+				    return false;
+			    }
+			    $scope.fullEdition = result[2].data;
+			    $scope.fullEdition.descriptionOriginal = $scope.fullEdition.description;
+			    var currentTag = '';
+		            for (var i = 0; i < $scope.fullEdition.productTags.length; i++) {
 				    currentTag = currentTag + $scope.fullEdition.productTags[i].name + ', ';
-				  }
-				  currentTag = currentTag.replace(/,\s*$/, "");
-				  $scope.fullEdition.currentTag = currentTag;
-				  for (var i = 0; i < $scope.fullEdition.manufactorers.length; i++) {
+			    }
+		            currentTag = currentTag.replace(/,\s*$/, "");
+			    $scope.fullEdition.currentTag = currentTag;
+			    for (var i = 0; i < $scope.fullEdition.manufactorers.length; i++) {
 				      if ($scope.fullEdition.manufactorer == $scope.fullEdition.manufactorers[i].id) {
 					  $scope.fullEdition.manufactorerSingle = $scope.fullEdition.manufactorers[i];
 				      }
-				  }
-				  for (var i = 0; i < $scope.data.activity.length; i++) {
+			     }
+			     for (var i = 0; i < $scope.data.activity.length; i++) {
 					if ($scope.fullEdition.active == $scope.data.activity[i].value) {
 					      $scope.fullEdition.active = $scope.data.activity[i];
 					}
-				  }
-				  for (var i = 0; i < $scope.data.conditions.length; i++) {
+			     }
+			     for (var i = 0; i < $scope.data.conditions.length; i++) {
 					if ($scope.fullEdition.condition == $scope.data.conditions[i].value) {
 					      $scope.fullEdition.condition = $scope.data.conditions[i];
 					}
-				  }
-				  if ($scope.fullEdition.discount.new.reductionType == 'percentage') {
+			     }
+			     if ($scope.fullEdition.discount.new.reductionType == 'percentage') {
 					var discount = $scope.fullEdition.price.new * $scope.fullEdition.discount.new.reduction;
 					$scope.fullEdition.discount.new.realPrice = $scope.fullEdition.price.new - discount;
-				  }
-				  if ($scope.fullEdition.discount.old.reductionType == 'amount') {
+			     }
+			     if ($scope.fullEdition.discount.old.reductionType == 'amount') {
 					$scope.fullEdition.discount.old.realPrice = $scope.fullEdition.price.old - $scope.fullEdition.discount.old.reduction;
-				  }
-			    })
-		    })
+			     }
+		    });
 		    $scope.productDetail = 'Pełna edycja produktu nr: ' + $scope.productId;
 		    $scope.disabled = true;
 		    $scope.progress = undefined;
 	      } else if ($routeParams.historyId != undefined) {
-		    productsService.getHistory($routeParams)
+		    productsModel.getHistory($routeParams)
 		    .then(function(response){
 			      $scope.disabled = true;
 			      delete $scope.data.modified;
@@ -679,12 +693,20 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate', 'ngCookies'])
 			      
 		    }) 
 	      } else {
-		    checkModified();
+		     	productsModel.getCategories()
+			.then(function(response){
+				  $scope.categories = response.data;
+			}) 
+			productsModel.getManufacturers()
+			.then(function(response){
+				  $scope.manufactorers = response.data;
+			}) 
+			checkModified();
 	      }
 	}
 	
 	function updateData(db, data, success) {
-		productsService.updateData($scope, db, data, config)
+		productsModel.updateData($scope, db, data, config)
 		.then(function (response) {
                 $scope.basicUpdate = response.data;
 		if ($scope.basicUpdate.success == true) {	
@@ -720,7 +742,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate', 'ngCookies'])
 	      var basicName = this.basicName;
 	      delete $scope.checkId;
 	      delete $scope.basicId;
-	      productsService.getName(this.basicName, this.data.manufacturerSelect, this.data.categorySelect)
+	      productsModel.getName(this.basicName, this.data.manufacturerSelect, this.data.categorySelect)
 	      .then(function(response){
 		      if(response.data.success == false) {
 			  $scope.noProduct = 'Brak produktu o nazwie: ' + basicName;
@@ -776,7 +798,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate', 'ngCookies'])
 	};
 	
 	$scope.deleteModified = function (id) {
-		productsService.deleteModified(id)
+		productsModel.deleteModified(id)
 		.then(function(response){
 		      $scope.data.modifiedDelete = response.data;
 		      if ($scope.data.modifiedDelete.success == true) {
@@ -838,7 +860,7 @@ angular.module("ZappApp", ['ngRoute', 'ngSanitize', 'ngAnimate', 'ngCookies'])
 		deletePhoto: $scope.fullEdition.deletePhoto,
 		modified: $scope.fullEdition.modified
               });
-	      productsService.fullUpdate($scope, data, config)
+	      productsModel.fullUpdate($scope, data, config)
 	      .then(function (response) {
 		    $scope.fullUpdate = response.data;
 		    if ($scope.fullUpdate === 'true') {

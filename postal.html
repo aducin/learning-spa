@@ -34,7 +34,7 @@
 			  <li><a href="#/logout">Wyloguj</a></li> 
 		    </ul>
 	        </div>
-	        <div ng-if="postal.current" class="col-xs-12">
+	        <div ng-if="displayMain" class="col-xs-12">
 		      <div class="col-xs-3">
 		      </div>
 		      <div class="col-xs-2">
@@ -138,4 +138,9 @@
 			 <strong>UWAGA!</strong> {{postalMessage}}
 	</div>
 </div>
-		      
+<div ng-if="displayMain" class="container">
+	<hr>
+	<footer>
+	  <p class="pull-right">&copy; 2016 Ad9BIS.</p>
+	</footer>
+</div>		      
