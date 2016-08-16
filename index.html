@@ -8,8 +8,20 @@
         <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.4/angular-route.js"></script>
         <script src="node_modules/angular/angular-sanitize.js"></script>
         <script src="node_modules/angular/angular-animate.js"></script>
-        <script src="node_modules/bootstrap/dist/js/bootstrap.js"></script>
-        <script src="app.js"></script>
+        <script src="node_modules/angular/angular-cookies.js"></script>
+        <script src="node_modules/angular-ui-bootstrap/dist/ui-bootstrap.js"></script>
+        <script src="node_modules/angular-ui-bootstrap/dist/ui-bootstrap-tpls.js"></script>
+        <script src="js/app.js"></script>
+        <script src="js/config.js"></script>
+        <script src="js/model/ordersModel.js"></script>
+        <script src="js/loginService.js"></script>
+        <script src="js/model/loginModel.js"></script>
+        <script src="js/model/postalModel.js"></script>
+        <script src="js/model/productsModel.js"></script>
+        <script src="js/controllers/loginController.js"></script>
+        <script src="js/controllers/ordersController.js"></script>
+        <script src="js/controllers/productController.js"></script>
+        <script src="js/controllers/postalController.js"></script>
         <style>
 	    .borderSolid {
 		border: 1px solid;
@@ -46,18 +58,13 @@
 	    }
 	</style>
         <link rel="stylesheet" type="text/css" href="node_modules/bootstrap/dist/css/bootstrap.css" />
+        <link rel="stylesheet" type="text/css" href="node_modules/angular-ui-bootstrap/dist/ui-bootstrap-csp.css" />
     </head>
 
     <body ng-app="ZappApp">
-      <span ng-controller="ProductController">
+      <!--<span ng-controller="ProductController">-->
 
 	  <div ng-view></div>
-      </span>
-    
-        <!-- Bootstrap core JavaScript
-    ================================================== -->
-    <!-- Placed at the end of the document so the pages load faster -->
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
-    <script>window.jQuery || document.write('<script src="../../assets/js/vendor/jquery.min.js"><\/script>')</script>
+      <!--</span>-->
   </body>
 </html>

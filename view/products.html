@@ -1,0 +1,459 @@
+<style>
+      .background {
+	    background-color: #FFFACD;
+	    border-radius: 10px;
+	    padding-bottom: 20px;
+      }
+      .centered {
+	    text-align: center;
+      }
+      .marginBottom {
+	    margin-bottom: 8px;
+      }
+      .marginTop {
+	    margin-top: 8px;
+      }
+      .minusMarginLeft {
+	    margin-left: -12px;
+      }
+      .minusMarginTop {
+	    margin-top: -8px;
+      }
+</style>
+<nav class="navbar navbar-inverse navbar-fixed-top">
+	<div class="container-fluid">
+	      <div class="navbar-header">
+		      <a class="navbar-brand" href="#/">Witaj w nowej wersji CMS!</a>
+	      </div>
+	      <ul class="nav navbar-nav">
+		     <li class="active"><a href="#/products">Produkty</a></li>
+		     <li><a href="#/orders">Zamówienia</a></li>
+		     <li><a href="#/postal">Wysyłki</a></li>
+		     <li><a href="#/logout">Wyloguj</a></li> 
+	      </ul>
+	</div>
+	<div ng-if="displayMain" class="container">
+		<div id="navbar" class="navbar-collapse collapse">
+		        <div class="col-xs-12">
+			      <div class="col-xs-1">
+			      </div>
+			      <div class="col-xs-6">
+			      <form class="navbar-form">
+				    <div class="form-group">
+					<input ng-disabled="disabled" ng-keyup="checkName()" type="text" placeholder="Podaj nazwę" class="form-control" ng-model="basicName">
+				    </div>
+				    <div class="form-group">
+					<button ng-disabled="disabled" ng-click="checkNameConditions()" class="btn btn-warning">Dodatkowe kryteria</button>
+				    </div>
+				    <button ng-disabled="disabled" ng-click="checkName()" class="btn btn-success">Wyszukaj</button>
+			      </form>
+			      </div>
+			      <div class="col-xs-4">
+			      <form ng-submit="checkIdBasic()" class="navbar-form">
+				      <div class="form-group">
+					  <input ng-disabled="history || historyError" type="text" placeholder="Podaj ID" class="form-control" ng-model="checkId">
+				      </div>
+				      <div ng-if="attributeSelect" class="form-group">
+					    <select ng-disabled="history || historyError" ng-model="data.singleSelect" ng-init="data.singleSelect='0'" class="form-control">
+						    <option value="0">Wybierz kategorię</option>
+						    <option ng-repeat="item in attributeSelect" value="{{item.productAttributeBoth}}">{{item.name}}</option>
+					    </select>
+				      </div>
+				      <input ng-disabled="history || historyError" type="submit" class="btn btn-success" value="Wyszukaj" />
+			      </form>
+			      </div>
+			      <div class="col-xs-1">
+			      </div>
+			</div>
+		</div>
+		<div ng-if="basicId" class="col-xs-12">
+		    <div class="col-xs-4">
+			<div ng-if="basicId" id="navbar" class="navbar-collapse collapse colorWhite">
+				<img class="pull-left imageBig gallery-image fade-animation" ng-src="{{basicId.imageUrl}}" ng-click="openInNewWindow()" />
+			</div>
+		    </div>
+		    <div class="col-xs-8 colorWhite">
+			    <p>ID: {{basicId.id}}, Nazwa: 
+					<a href="http://ad9bis.vot.pl/weglarki-h0/{{basicId.id}}-{{basicId.linkRewrite}}.html" target="blank">{{basicId.name}}</a>
+					<span ng-if="basicId.attribute.new!='0'">, atrybut: {{basicId.attribute.newName}}</span>
+			    </p>
+			    <p>Ilość - nowy sklep: {{basicId.quantity.new}}</p>
+			    <p>Ilość - stary sklep: {{basicId.quantity.old}}</p>
+			    <div class="col-xs-12" style="margin-bottom: 10px;">
+				  <div class="col-xs-2">
+					<button ng-click="checkIdBasicQuantityChange()" class="btn btn-info marginLeft">Zmień ilość</button>
+				  </div>
+				  <div ng-if="basicQuantityChange" class="col-xs-3">
+					 <input type="text" placeholder="Podaj nową ilość" class="form-control" id="basicQuantityInput" />
+				  </div>
+				  <div ng-if="basicQuantityChange" class="col-xs-5">
+					<select class="form-control" id="basicQuantityDb">
+						  <option value="both">Zapisz w obu bazach</option>
+						  <option value="linuxPl">Zapisz w nowej bazie</option>
+						  <option value="ogicom">Zapisz w starej bazie</option>
+					</select>
+				  </div>
+				  <div ng-if="basicQuantityChange" class="col-xs-2">
+					<button ng-click="updateQuantity()" class="btn btn-primary">Zapisz ilość</button>
+				  </div>
+			    </div>
+			    <p>Cena - nowy sklep: {{basicId.price.new}} zł 
+				    <span ng-if="basicId.priceReal.new" class="label label-default">- UWAGA RABAT {{basicId.discount.new.percentage}} %! Realna cena: {{basicId.priceReal.new}} zł</span>
+			    </p>
+			    <p>Cena - stary sklep: {{basicId.price.old}} zł 
+				    <span ng-if="basicId.priceReal.old" class="label label-default">- UWAGA RABAT {{basicId.discount.old.reduction}} zł! Realna cena: {{basicId.priceReal.old}} zł</span>
+			    </p>
+		    
+			    <div class="col-xs-12">
+				    <div class="col-xs-2">
+					  <button ng-click="checkIdBasicPriceChange()" class="btn btn-info marginLeft">Zmień cenę</button>
+				    </div>
+				    <div ng-if="basicPriceChange" class="col-xs-3">
+					    <input type="text" placeholder="Podaj nową cenę" class="form-control" id="basicPriceInput" />
+				    </div>
+				    <div ng-if="basicPriceChange" class="col-xs-5">
+					    <select class="form-control" id="basicPriceDb">
+						  <option value="both">Zapisz w obu bazach</option>
+						  <option value="linuxPl">Zapisz w nowej bazie</option>
+						  <option value="ogicom">Zapisz w starej bazie</option>
+					    </select>
+				    </div>
+				    <div ng-if="basicPriceChange" class="col-xs-2">
+					    <button ng-click="updatePrice()" class="btn btn-primary">Zapisz cenę</button>
+				    </div>
+			    </div>
+			    <div ng-if="basicUpdate.messageError" class="col-xs-12">
+				    <br>
+				    <div class="alert alert-danger fade in centered">
+					      <strong>{{basicUpdate.messageError}}</strong>
+				    </div>
+			    </div>
+			    <div ng-if="basicUpdate.message" class="col-xs-12">
+				    <br>
+				    <div class="alert alert-success fade in centered">
+					      <strong>{{basicUpdate.message}}</strong>
+				    </div>
+			    </div>
+			    <div class="col-xs-12" style="margin-top: 10px;">
+				    <div class="col-xs-2">
+					  <button ng-click="editionProduct(basicId.id)" class="btn btn-primary marginLeft">Pełna edycja</button>
+				    </div>
+				    <div class="col-xs-2" style="margin-left: 10px;">
+					  <button ng-click="historyProduct(basicId.id)" class="btn btn-primary pull-right">Historia ilości</button>
+				    </div>
+				    <div class="col-xs-2 pull-right">
+					  <button ng-click="deleteProducts()" class="btn btn-danger">Usuń wyniki</button>
+				    </div>
+			    </div>
+		    </div>
+		</div>
+		<div ng-if="nameAdditionalConditions" id="navbar" class="form-group form-inline colorWhite">
+			<div ng-if="categories" id="navbar" class="form-group form-inline colorWhite">
+				<div class="col-md-5">
+					<label>Kategoria</label>
+					<select ng-model="data.categorySelect" ng-init="data.categorySelect='0'" class="form-control">
+					      <option value="0">Dowolna kategoria</option>
+					      <option ng-repeat="item in categories" value="{{item.id}}">{{item.metaTitle}}</option>
+					</select>
+				</div>
+			</div>
+			<div ng-if="manufactorers" id="navbar" class="form-group form-inline pull-right colorWhite">
+				<div class="col-md-4">
+					<label>Producent</label>
+					<select ng-model="data.manufacturerSelect" ng-init="data.manufacturerSelect='0'" class="form-control">
+					      <option value="0">Dowolny producent</option>
+					      <option ng-repeat="item in manufactorers" value="{{item.id}}">{{item.name}}</option>
+					</select>
+				</div>
+			</div>
+		</div>
+	</div>
+</nav>
+
+<!-- Main jumbotron for a primary marketing message or call to action -->
+    <div ng-if="displayMain" class="jumbotron">
+      <div class="container">
+        <p></p>
+      </div>
+    </div>
+
+<div class="container">
+	<!-- Example row of columns -->
+	<div ng-if="noProduct" class="container centered alert alert-danger">
+	      <strong>UWAGA!</strong> {{noProduct}}
+	</div>
+	<div class="container" ng-if="productDetail" ng-style="progress" id="fullUpdateColor">
+	      <form ng-submit="fullUpdate()">
+		  <h2 class="centered">
+		      <a href="http://ad9bis.vot.pl/weglarki-h0/{{fullEdition.id}}-{{fullEdition.linkRewrite}}.html" target="blank">{{productDetail}}</a>
+		  </h2>
+		  <div class="col-xs-12 marginBottom">
+		      <label class="col-xs-2 marginTop">Nazwa</label>
+		      <div class="col-xs-10">
+			  <input ng-disabled="fullUpdate=='success'" ng-model="fullEdition.name" ng-change="multiplyText()" class="form-control borderSolid" type="text" />
+		      </div>
+		  </div>
+		  <div class="col-xs-12 marginBottom">
+		      <label class="col-xs-2 marginTop">Krótki opis</label>
+		      <div class="col-xs-10">
+			  <textarea ng-disabled="fullUpdate=='success'" ng-model="fullEdition.descriptionShort" ng-change="multiplyDesc()" rows="2" cols="50" class="form-control borderSolid" ></textarea>
+		      </div>
+		  </div>
+		  <div class="col-xs-12 marginBottom">
+		      <label class="col-xs-2 marginTop">Pełny opis</label>
+		      <div class="col-xs-10">
+			  <textarea ng-disabled="fullUpdate=='success'" ng-model="fullEdition.description" rows="6" cols="50" class="form-control borderSolid">{{fullEdition.description}}</textarea>
+		      </div>
+		  </div>
+		  <div class="col-xs-12 marginBottom">
+		      <label class="col-xs-2 marginTop">Link do produktu</label>
+		      <div class="col-xs-10">
+			  <input ng-disabled="fullUpdate=='success'" ng-model="fullEdition.linkRewrite" value="{{fullEdition.linkRewrite}}" class="form-control borderSolid" type="text" />
+		      </div>
+		  </div>
+		  <div class="col-xs-12 marginBottom">
+		      <label class="col-xs-2 marginTop">Meta-tytuł produktu</label>
+		      <div class="col-xs-10">
+			  <input ng-disabled="fullUpdate=='success'" ng-model="fullEdition.metaTitle" class="form-control borderSolid" type="text" />
+		      </div>
+		  </div>
+		  <div class="col-xs-12 marginBottom">
+		      <label class="col-xs-2 marginTop">Meta-opis produktu</label>
+		      <div class="col-xs-10">
+			  <input ng-disabled="fullUpdate=='success'" ng-model="fullEdition.metaDescription" class="form-control borderSolid" type="text" />
+		      </div>
+		  </div>
+		  <div class="col-xs-12 marginBottom">
+		      <label class="col-xs-2 marginTop">Tagi produktu</label>
+		      <div class="col-xs-10">
+			  <input ng-disabled="fullUpdate=='success'" ng-model="fullEdition.currentTag" class="form-control borderSolid" type="text" />
+		      </div>
+		  </div>
+		  <div class="col-xs-12 marginBottom">
+			  <label class="col-xs-2 marginTop">Aktualna ilość</label>
+			  <div class="col-xs-2">
+			      <input ng-disabled="fullUpdate=='success'" ng-model="fullEdition.quantity.new" class="form-control borderSolid" type="text" />
+			  </div>
+			  <label class="col-xs-2 marginTop">Producent</label>
+			  <div class="col-xs-3">
+			      <select ng-disabled="fullUpdate=='success'" ng-model="fullEdition.manufactorerSingle" ng-options="single.name for single in fullEdition.manufactorers" class="form-control borderSolid"></select>
+			  </div>
+		  </div>
+		  <div class="col-xs-12 marginBottom">
+		      <label class="col-xs-2 marginTop">Stan produktu</label>
+		      <div class="col-xs-2">
+			  <select ng-disabled="fullUpdate=='success'" ng-model="fullEdition.condition" ng-options="single.name for single in data.conditions" class="form-control borderSolid">
+			  </select>
+		      </div>
+		      <label class="col-xs-2 marginTop">Aktywność produktu</label>
+		      <div class="col-xs-3" >
+			  <select ng-disabled="fullUpdate=='success'" ng-model="fullEdition.active" ng-options="single.name for single in data.activity" class="form-control borderSolid">
+			  </select>
+		      </div>
+		  </div>
+		  <div class="col-xs-12 marginBottom">
+		      <label class="col-xs-2 marginTop">Cena zł (NP)</label>
+		      <div class="col-xs-2">
+			  <input ng-disabled="fullUpdate=='success'" ng-model="fullEdition.price.new" class="form-control borderSolid" type="text" />
+			  <span ng-if="fullEdition.discount.new.reduction" class="label label-default">- UWAGA RABAT {{fullEdition.discount.new.percentage}} %! Realna cena: {{fullEdition.discount.new.realPrice}} zł</span>
+		      </div>
+		  </div>
+		  <div class="col-xs-12 marginBottom">
+		      <label class="col-xs-2 marginTop">Cena zł (SP)</label>
+		      <div class="col-xs-2">
+			  <input ng-disabled="fullUpdate=='success'" ng-model="fullEdition.price.old" class="form-control borderSolid" type="text" />
+			  <span ng-if="fullEdition.discount.old.reduction" class="label label-default">- UWAGA RABAT {{fullEdition.discount.old.reduction}} zł! Realna cena: {{fullEdition.discount.old.realPrice}} zł</span>
+		      </div>
+		  </div>
+		  <div class="col-xs-12 marginBottom">
+		      <div class="col-xs-2">
+			    <label class="marginTop">Aktywne kategorie</label>
+		      </div>
+		      <div ng-if="fullEdition.productCategoriesName" ng-style="categoryList" class="col-xs-4 border">
+			  <div ng-if="displayCategory != true">
+			      <div class="marginTop"></div>
+			      <span ng-repeat="item in fullEdition.productCategoriesName" ng-click="displayCategories()">
+				  <p><b>· {{item}}</b></p>
+			      </span>
+			  </div>
+			  <button ng-if="displayCategory" ng-click="displayCategories()" class="btn btn-primary marginTop marginBottom" >Zwiń listę</button>
+			  <span ng-if="displayCategory" ng-repeat="item in fullEdition.categories">
+			      <p>
+				  <input type="checkbox" value="{{item.id}}" ng-model="item.checked"/><b> {{item.metaTitle}}</b>
+			      </p>
+			  </span>
+		      </div>
+		  </div>
+		  <div class="col-xs-12 marginBottom">
+		      <label class="col-xs-2 marginTop">Zdjęcia produktu</label>
+		      <div ng-if="displayPhoto != true" class="col-xs-9">
+			  <button ng-disabled="fullUpdate=='success'" ng-click="displayPhotos()" class="btn btn-primary">Rozwiń miniatury</button>
+		      </div>
+		      <div ng-if="displayPhoto" class="col-xs-9 border">
+			  <div ng-repeat="item in fullEdition.images">
+			      <img ng-click="displayPhotos()" ng-src="{{item}}" class="pull-left" height="159" width="159">
+			  </div>
+		      </div>
+		  </div>
+		  <div class="col-xs-12 marginBottom">
+		      <label class="col-xs-2 marginTop">Usuń zdjęcia</label>
+		      <div class="col-xs-1">
+			  <input ng-disabled="fullUpdate=='success'" ng-model="fullEdition.deletePhoto" class="form-control borderSolid pull-left minusMarginLeft" type="checkbox" style="margin-left: -13px;" />
+		      </div>
+		  </div>
+		  <div class="col-xs-12 marginBottom">
+		      <label class="col-xs-2">Zapisz produkt jako podmieniony</label>
+		      <div class="col-xs-1">
+			  <input ng-disabled="fullUpdate=='success'" ng-model="fullEdition.modified" class="form-control borderSolid pull-left minusMarginLeft" type="checkbox" style="margin-left: -13px;" />
+		      </div>
+		  </div>
+		  <div class="col-xs-2">
+		      <label>
+			    <a href="http://modele-ad9bis.pl/learning-spa/#/products" class="btn btn-danger" role="button">Usuń wyniki</a>
+		      </label>
+		  </div>
+		  <div class="col-xs-10">
+			    <input ng-if="fullUpdate!='success'" type="submit" class="btn btn-primary" value="Zapisz zmiany" style="margin-left: 10px;"  />
+			    <a href="http://modele-ad9bis.pl/learning-spa/#/products/{{fullEdition.id}}/history" class="btn btn-info pull-right" role="button">Historia ilości</a>
+		  </div>
+		  <div ng-if="fullUpdate=='success'" class="col-xs-12 centered alert alert-success marginTop">
+			<strong>Zmiany zostały skutecznie zapisane!</strong>
+		  </div>
+	    </form>
+	</div>
+	<div class="container" ng-if="data.searchResult != null">
+	  <p><b>{{data.searchResult}}</b><span ng-if="data.searchResultLength != null" class="pull-right"><b>{{data.searchResultLength}}</b></span></p>
+	</div>
+	<div class="row" ng-if="names != null">
+	  <div class="col-md-6" ng-repeat="item in names">
+	      <div ng-if="item.id">
+		<p><a class="btn btn-primary" href="#/products/{{item.id}}" role="button">Pełna edycja &raquo;</a> ID: {{item.id}}, nazwa: {{item.name}}</p>
+	      </div>
+	  </div>
+	</div>
+	<div ng-if="data.modified">
+	    <div ng-if="names == undefined">
+		<div ng-if="fullEdition.name == undefined" class="container background">
+		      <h2 class="centered">Lista produktów podmienionych: </h2>
+		      <div class="col-xs-12 marginBottom">
+			    <div class="col-xs-1">
+			    </div>
+			    <div class="col-xs-2">
+				   <h4>NUMER ID</h4>
+			    </div>
+			    <div class="col-xs-3">
+				   <h4>NAZWA</h4>
+			    </div>
+			    <div class="col-xs-3">
+				   <h4>DATA WPISU</h4>
+			    </div>
+			    <div class="col-xs-2">
+				   <h4>AKCJA</h4>
+			    </div>
+		      </div>
+		      <hr>
+		      <div class="col-xs-12 marginTop" ng-repeat="item in data.modified">
+				<div class="col-xs-1">
+				</div>
+				<div class="col-xs-2">
+				      <p>{{item.id}}</p>
+				</div>
+				<div class="col-xs-3">
+				      <p>{{item.name}}</p>
+				</div>
+				<div class="col-xs-3">
+				      <p>{{item.date}}</p>
+				</div>
+				<div class="col-xs-2">
+				   	<button ng-click="deleteModified(item.id)" class="btn btn-primary minusMarginTop">Usuń wpis</button>
+				</div>
+		      </div>
+		      <div ng-if="data.modifiedDelete.error" class="col-xs-12 marginBottom">
+			    <div class="col-xs-4 marginBottom">
+			    </div>
+			    <div class="col-xs-4 marginBottom">
+				  <button ng-click="checkModified()" class="btn btn-danger">Nie udało się usunąć produktu!</button>
+			    </div>
+		      </div>
+		      <div ng-if="data.modifiedDelete.success" class="col-xs-12 marginBottom">
+			    <div class="col-xs-4 marginBottom">
+			    </div>
+			    <div class="col-xs-4 marginBottom">
+				  <button ng-click="checkModified()" class="btn btn-success">Produkt skutecznie usunięty z listy!</button>
+			    </div>
+		      </div>
+		</div>
+	    </div>
+	</div>
+	<div ng-if="historyError">
+	      <div class="container">
+		    <div class="col-xs-12 centered alert alert-danger marginTop">
+			      <strong>UWAGA!</strong> {{historyError}}
+		    </div>
+	      </div>
+	      <div class="col-xs-12 marginTop">
+		    <a ng-href="#/products/{{id}}" class="btn btn-primary" role="button">Powrót do produktu</a>
+		    <a ng-href="#/products/" class="btn btn-danger pull-right marginBottom marginTop" role="button">Usuń wyniki</a>
+	      </div>
+	</div>
+	<div ng-if="history">
+	      <a ng-href="#/products/{{id}}" class="btn btn-primary marginBottom marginTop" role="button">Powrót do produktu</a>
+	      <a ng-href="#/products/" class="btn btn-danger pull-right marginBottom marginTop" role="button">Usuń wyniki</a>
+	      <div class="container background">
+		      <h2 class="centered">Historia zmian ilości produktu nr: <b>{{id}}</b> (10 najnowszych wpisów)</h2>
+		      <br>
+		      <div class="col-xs-12 marginBottom">
+			    <div class="col-xs-1">
+			    </div>
+			    <div class="col-xs-1">
+				  <h4 class="centered">Lp.</h4>
+			    </div>
+			    <div class="col-xs-3">
+				   <h4 class="centered">Data zmiany</h4>
+			    </div>
+			    <div class="col-xs-2">
+				   <h4 class="centered">Sklep</h4>
+			    </div>
+			    <div class="col-xs-2">
+				   <h4 class="centered">Ilość po zmianie</h4>
+			    </div>
+			    <div class="col-xs-2">
+				   <h4 class="centered">Użytkownik</h4>
+			    </div>
+			    <div class="col-xs-1">
+			    </div>
+		      </div>
+		      <hr>
+		      <div class="col-xs-12 marginTop" ng-repeat="item in history">
+			    <div class="col-xs-12 marginBottom">
+				  <div class="col-xs-1">
+				  </div>
+				  <div class="col-xs-1">
+					<p class="centered">{{item.lp}}.</p>
+				  </div>
+				  <div class="col-xs-3">
+					<p class="centered">{{item.date}}</p>
+				  </div>
+				  <div class="col-xs-2">
+					<p class="centered">{{item.dataBase}}</p>
+				  </div>
+				  <div class="col-xs-2">
+					<p class="centered">{{item.quantity}}</p>
+				  </div>
+				  <div class="col-xs-2">
+					<p class="centered">{{item.user}}</p>
+				  </div>
+				  <div class="col-xs-1">
+			    </div>
+			    </div>
+		      </div>
+	      </div>
+	</div>
+</div>
+<div ng-if="displayMain" class="container">
+	<hr>
+	<footer>
+	  <p class="pull-right">2016 Ad9BIS &copy;</p>
+	</footer>
+</div> <!-- /container -->
+    

@@ -1,0 +1,63 @@
+<style>
+      .background {
+	    background-color: #E6E6FA;
+	    border-radius: 10px;
+	    padding-bottom: 20px;
+	    border-style: solid;
+	    border-color: #DCDCDC;
+      }
+      .centered {
+	    text-align: center;
+      }
+      .margin-top4 {
+	    margin-top: 4%;
+      }
+</style>
+<div class="col-xs-12">
+<div style="margin-top: 3%;"></div>
+<div class="container">
+    <div ng-if="login.form" class="row">
+        <div class="col-sm-6 col-md-4 col-md-offset-4">
+	    <div class="col-xs-12">
+		  <div class="col-xs-12 background">
+			<h2><span style="margin-left: 4%;" class="label label-default">Zaloguj do panelu CMS</span></h2>
+			<div style="margin-top: 7%;"></div>
+			<div ng-if="login.success" class="alert alert-success centered">{{login.success}}</div>
+			<div ng-if="login.error" class="alert alert-danger centered">{{login.error}}</div>
+			<div class="account-wall">
+			    <form ng-submit="loginAction()" class="form-signin">
+				  <input ng-model="login.email" type="text" class="form-control centered" placeholder="Podaj swój login" pattern=".{5,}" required
+					  oninvalid="setCustomValidity('Proszę uzupełnić pole login!')" 
+					  oninput="setCustomValidity('')" autofocus>
+				  <div class="margin-top4"></div>
+				  <input ng-model="login.password" type="password" class="form-control centered" placeholder="Podaj hasło" pattern=".{3,}" required oninvalid="setCustomValidity('Proszę uzupełnić hasło!')" oninput="setCustomValidity('')" >
+				  <div class="margin-top4"></div>
+				  <div class="col-xs-12">
+					<div class="col-xs-1">
+					</div>
+					<div class="col-xs-10">
+					      <input type="submit" style="margin-left: -4%;" class="btn btn-primary btn-block" value="Zaloguj" />
+					      <div class="margin-top4"></div>
+					      <div class="col-xs-3">
+					      </div>
+					      <input ng-model="login.remember" type="checkbox" value="remember-me">
+						  Zapamiętaj
+					</div>
+					<div class="col-xs-1">
+					</div>
+				  </div>
+			    </form>
+			</div>
+		  </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div style="margin-top: 18.5%; background-color: red"></div>
+</div>
+<div class="container">
+	<hr>
+	<footer>
+	  <p class="pull-right">&copy; 2016 Ad9BIS.</p>
+	</footer>
+</div> <!-- /container -->
