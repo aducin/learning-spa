@@ -1,4 +1,4 @@
-angular.module('ZappApp.modelService', [])
+angular.module('ZappApp.LoginModel', [])
 
 .service(
 	"loginModel",

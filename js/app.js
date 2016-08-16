@@ -5,7 +5,7 @@ angular.module("ZappApp", [
 	'ngCookies', 
 	'ZappApp.config', 
 	'ZappApp.LoginService', 
-	'ZappApp.modelService', 
+	'ZappApp.LoginModel', 
 	'ZappApp.OrdersModel', 
 	'ZappApp.PostalModel', 
 	'ZappApp.ProductsModel', 
